@@ -1,1 +1,1 @@
-# Tugas Besar 1 IF2010 Pemrograman Berorientasi Objek
+# FrontEnd - Tugas Besar 2 IF2211 Strategi Algoritma
