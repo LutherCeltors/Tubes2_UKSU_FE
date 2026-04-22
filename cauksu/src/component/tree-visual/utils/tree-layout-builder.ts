@@ -68,7 +68,7 @@ function buildBalancedTreeLayout(root: DomTreeNode): TreeLayoutResult {
 
   traverse(root, 0, null);
 
-  const width = Math.max(nextLeafX + TREE_PADDING_X * 2, 900);
+  const width = nextLeafX;
   const height = (maxDepth + 1) * TREE_VERTICAL_GAP + TREE_PADDING_Y * 2;
 
   return finalizeLayout(draftNodes, width, height, TREE_PADDING_X, TREE_PADDING_Y);
@@ -99,10 +99,7 @@ function buildIndentedLayout(root: DomTreeNode): TreeLayoutResult {
 
   traverse(root, 0, null);
 
-  const width = Math.max(
-    maxDepth * INDENT_GAP_X + INDENT_PADDING_X * 2 + EXPANDED_RECT_HALF_WIDTH * 2 + 80,
-    1000
-  );
+  const width = maxDepth * INDENT_GAP_X + INDENT_PADDING_X * 2 + EXPANDED_RECT_HALF_WIDTH * 2 + 80;
 
   const height = Math.max(
     rowIndex * INDENT_GAP_Y + INDENT_PADDING_Y * 2,

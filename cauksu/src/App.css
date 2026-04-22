@@ -131,11 +131,48 @@ body,
   background: #ffffff;
 }
 
+.app-empty-state-card {
+  border: 1px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+  color: #475569;
+  line-height: 1.5;
+}
+
 .app-summary-label {
   display: block;
   margin-bottom: 6px;
   font-size: 12px;
   color: #64748b;
+}
+
+.app-main-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.app-main-empty-card {
+  max-width: 440px;
+  padding: 28px 32px;
+  border: 1px dashed rgba(148, 163, 184, 0.75);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.98);
+  color: #1e293b;
+  text-align: center;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+}
+
+.app-main-empty-card h2 {
+  margin: 0 0 10px;
+}
+
+.app-main-empty-card p {
+  margin: 0;
+  line-height: 1.6;
 }
 
 .app-sidebar,

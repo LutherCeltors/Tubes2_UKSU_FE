@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 
-type DragState = {
-  startX: number;
-  startY: number;
-  scrollLeft: number;
-  scrollTop: number;
+type PanState = {
+  startPointerX: number;
+  startPointerY: number;
+  startCameraX: number;
+  startCameraY: number;
 };
 
-export function useCanvasPan(containerRef: RefObject<HTMLDivElement | null>) {
-  const dragStateRef = useRef<DragState>({
-    startX: 0,
-    startY: 0,
-    scrollLeft: 0,
-    scrollTop: 0,
+export function useCanvasPan() {
+  const dragStateRef = useRef<PanState>({
+    startPointerX: 0,
+    startPointerY: 0,
+    startCameraX: 0,
+    startCameraY: 0,
   });
 
   const [isPanning, setIsPanning] = useState(false);
@@ -20,55 +20,52 @@ export function useCanvasPan(containerRef: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     if (!isPanning) return;
 
-    function handleMouseMove(event: MouseEvent) {
-      const container = containerRef.current;
-      if (!container) return;
-
-      const dx = event.clientX - dragStateRef.current.startX;
-      const dy = event.clientY - dragStateRef.current.startY;
-
-      container.scrollLeft = dragStateRef.current.scrollLeft - dx;
-      container.scrollTop = dragStateRef.current.scrollTop - dy;
-    }
-
-    function handleMouseUp() {
+    function handlePointerUp() {
       setIsPanning(false);
     }
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [isPanning, containerRef]);
+  }, [isPanning]);
 
-  function handleMouseDown(event: React.MouseEvent<HTMLDivElement>) {
+  function startPan(
+    event: React.PointerEvent<HTMLDivElement>,
+    cameraX: number,
+    cameraY: number
+  ) {
     if (event.button !== 0) return;
 
     const target = event.target as HTMLElement;
-
-    if (target.closest(".tv-node-group")) {
-      return;
-    }
-
-    const container = containerRef.current;
-    if (!container) return;
+    if (target.closest(".tv-node-group")) return;
+    if (target.closest(".tv-floating-log")) return;
 
     dragStateRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      scrollLeft: container.scrollLeft,
-      scrollTop: container.scrollTop,
+      startPointerX: event.clientX,
+      startPointerY: event.clientY,
+      startCameraX: cameraX,
+      startCameraY: cameraY,
     };
 
     setIsPanning(true);
     event.preventDefault();
   }
 
+  function getNextCameraPosition(clientX: number, clientY: number) {
+    const dx = clientX - dragStateRef.current.startPointerX;
+    const dy = clientY - dragStateRef.current.startPointerY;
+
+    return {
+      x: dragStateRef.current.startCameraX + dx,
+      y: dragStateRef.current.startCameraY + dy,
+    };
+  }
+
   return {
     isPanning,
-    handleMouseDown,
+    startPan,
+    getNextCameraPosition,
   };
 }

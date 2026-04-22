@@ -30,9 +30,10 @@ function App() {
   const [visualizationKey, setVisualizationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
 
   const[isLeftMenuOpen, setLeftMenuOpen] = useState(true);
-  const currentData = treeData ?? sampleData;
+  const currentData = treeData ?? (!hasAttemptedSearch ? sampleData : null);
 
   const handleSubmit = async () => {
     const data : RequestData = {
@@ -47,6 +48,7 @@ function App() {
 
     setIsLoading(true);
     setErrorMessage("");
+    setHasAttemptedSearch(true);
 
     console.log("Payload ke backend:", data)
 
@@ -173,35 +175,60 @@ function App() {
               </div>
             )}
 
-            <section className="app-result-summary">
-              <div className="app-result-summary-header">
-                <h2>Result Summary</h2>
-              </div>
-
-              <div className="app-summary-grid">
-                <div className="app-summary-card">
-                  <span className="app-summary-label">Execution Time</span>
-                  <strong>{currentData.executionTimeMs} ms</strong>
+            {currentData ? (
+              <section className="app-result-summary">
+                <div className="app-result-summary-header">
+                  <h2>Result Summary</h2>
                 </div>
 
-                <div className="app-summary-card">
-                  <span className="app-summary-label">Nodes Visited</span>
-                  <strong>{currentData.nodesVisited}</strong>
+                <div className="app-summary-grid">
+                  <div className="app-summary-card">
+                    <span className="app-summary-label">Execution Time</span>
+                    <strong>{currentData.executionTimeMs} ms</strong>
+                  </div>
+
+                  <div className="app-summary-card">
+                    <span className="app-summary-label">Nodes Visited</span>
+                    <strong>{currentData.nodesVisited}</strong>
+                  </div>
+
+                  <div className="app-summary-card">
+                    <span className="app-summary-label">Max Depth</span>
+                    <strong>{currentData.maxDepth}</strong>
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="app-result-summary">
+                <div className="app-result-summary-header">
+                  <h2>Result Summary</h2>
                 </div>
 
-                <div className="app-summary-card">
-                  <span className="app-summary-label">Max Depth</span>
-                  <strong>{currentData.maxDepth}</strong>
+                <div className="app-empty-state-card">
+                  No visualization data is available right now. Fix the request or backend
+                  connection, then try searching again.
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
           </div>
         </aside>
 
         {/* Output field */}
         <div className='app-main'>
-              <TreeVisualizer key={visualizationKey} data ={currentData}/> 
+              {currentData ? (
+                <TreeVisualizer key={visualizationKey} data ={currentData}/>
+              ) : (
+                <div className="app-main-empty-state">
+                  <div className="app-main-empty-card">
+                    <h2>Visualization unavailable</h2>
+                    <p>
+                      The latest request did not return tree data, so the canvas is hidden
+                      instead of showing sample content.
+                    </p>
+                  </div>
+                </div>
+              )}
         </div>
       </div>
     </div>

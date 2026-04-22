@@ -8,6 +8,27 @@ type TreeNodeProps = {
   onToggle: (nodeId: number) => void;
 };
 
+const EXPANDED_RECT = {
+  x: -122,
+  y: -58,
+  width: 244,
+  height: 146,
+};
+
+const EXPANDED_BADGE = {
+  x: 92,
+  y: -48,
+  size: 20,
+  textX: 102,
+  textY: -34,
+};
+
+const RECT_CONTENT = {
+  labelX: -96,
+  separatorX: -10,
+  valueX: 8,
+};
+
 function formatAttributeText(attributes: Record<string, string>) {
   const entries = Object.entries(attributes);
 
@@ -18,7 +39,11 @@ function formatAttributeText(attributes: Record<string, string>) {
   return entries.map(([key, value]) => `${key}="${value}"`).join(", ");
 }
 
-function wrapText(text: string, maxLineLength = 22, maxLines = 2) {
+function wrapText(text: string, maxLineLength = 20, maxLines = 2) {
+  if (!text) {
+    return ["-"];
+  }
+
   if (text.length <= maxLineLength) {
     return [text];
   }
@@ -36,9 +61,15 @@ function wrapText(text: string, maxLineLength = 22, maxLines = 2) {
       if (currentLine) {
         lines.push(currentLine);
       }
-      currentLine = word;
 
-      if (lines.length === maxLines - 1) {
+      if (word.length > maxLineLength) {
+        lines.push(word.slice(0, maxLineLength - 3) + "...");
+        currentLine = "";
+      } else {
+        currentLine = word;
+      }
+
+      if (lines.length >= maxLines) {
         break;
       }
     }
@@ -48,17 +79,34 @@ function wrapText(text: string, maxLineLength = 22, maxLines = 2) {
     lines.push(currentLine);
   }
 
-  if (lines.length === 0) {
-    lines.push(text.slice(0, maxLineLength));
-  }
-
-  const usedText = lines.join(" ");
-  if (usedText.length < text.length) {
+  const joined = lines.join(" ");
+  if (joined.length < text.length) {
     const lastIndex = lines.length - 1;
-    lines[lastIndex] = `${lines[lastIndex].slice(0, Math.max(lines[lastIndex].length - 3, 0))}...`;
+    if (lastIndex >= 0) {
+      const trimmed = lines[lastIndex].slice(0, Math.max(lines[lastIndex].length - 3, 0));
+      lines[lastIndex] = `${trimmed}...`;
+    }
   }
 
   return lines.slice(0, maxLines);
+}
+
+function renderMultilineText(
+  x: number,
+  y: number,
+  lines: string[],
+  className: string,
+  lineHeight = 14
+) {
+  return (
+    <text x={x} y={y} className={className}>
+      {lines.map((line, index) => (
+        <tspan key={`${className}-${index}`} x={x} dy={index === 0 ? 0 : lineHeight}>
+          {line}
+        </tspan>
+      ))}
+    </text>
+  );
 }
 
 export default function TreeNode({
@@ -68,10 +116,13 @@ export default function TreeNode({
   onToggle,
 }: TreeNodeProps) {
   const attributeText = formatAttributeText(node.attributes);
-  const attributeLines = wrapText(attributeText, 22, 2);
 
-  const rootLabelY = isExpanded ? -86 : -64;
+  const rootLabelY = isExpanded ? -94 : -64;
   const levelLabelY = isExpanded ? -68 : -48;
+
+  const idLines = wrapText(String(node.id), 18, 2);
+  const tagLines = wrapText(node.tag, 18, 2);
+  const attributeLines = wrapText(attributeText, 22, 3);
 
   return (
     <motion.g
@@ -83,9 +134,9 @@ export default function TreeNode({
     >
       <title>
         {`Node ${node.id}
-<${node.tag}>
-${attributeText}
-${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
+        <${node.tag}>
+        ${attributeText}
+        ${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
       </title>
 
       {node.depth === 0 && (
@@ -108,65 +159,56 @@ ${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
             transition={{ duration: 0.2 }}
           >
             <rect
-              x={-122}
-              y={-50}
-              width={244}
-              height={126}
+              x={EXPANDED_RECT.x}
+              y={EXPANDED_RECT.y}
+              width={EXPANDED_RECT.width}
+              height={EXPANDED_RECT.height}
               rx={16}
               ry={16}
               className={`tv-node-shape tv-node-shape--${state}`}
             />
 
             <rect
-              x={92}
-              y={-40}
-              width={20}
-              height={20}
+              x={EXPANDED_BADGE.x}
+              y={EXPANDED_BADGE.y}
+              width={EXPANDED_BADGE.size}
+              height={EXPANDED_BADGE.size}
               rx={6}
               ry={6}
               className="tv-node-badge"
             />
-            <text x={102} y={-26} textAnchor="middle" className="tv-node-badge-symbol">
-              −
+            <text
+              x={EXPANDED_BADGE.textX}
+              y={EXPANDED_BADGE.textY}
+              textAnchor="middle"
+              className="tv-node-badge-symbol"
+            >
+              -
             </text>
 
-            <text x={-96} y={-16} className="tv-node-rect-label">
+            <text x={RECT_CONTENT.labelX} y={-22} className="tv-node-rect-label">
               id
             </text>
-            <text x={-10} y={-16} className="tv-node-rect-separator">
+            <text x={RECT_CONTENT.separatorX} y={-22} className="tv-node-rect-separator">
               :
             </text>
-            <text x={8} y={-16} className="tv-node-rect-value">
-              {node.id}
-            </text>
+            {renderMultilineText(RECT_CONTENT.valueX, -24, idLines, "tv-node-rect-value")}
 
-            <text x={-96} y={8} className="tv-node-rect-label">
+            <text x={RECT_CONTENT.labelX} y={12} className="tv-node-rect-label">
               tag
             </text>
-            <text x={-10} y={8} className="tv-node-rect-separator">
+            <text x={RECT_CONTENT.separatorX} y={12} className="tv-node-rect-separator">
               :
             </text>
-            <text x={8} y={8} className="tv-node-rect-value">
-              {node.tag}
-            </text>
+            {renderMultilineText(RECT_CONTENT.valueX, 10, tagLines, "tv-node-rect-value")}
 
-            <text x={-96} y={32} className="tv-node-rect-label">
+            <text x={RECT_CONTENT.labelX} y={48} className="tv-node-rect-label">
               attribute
             </text>
-            <text x={-10} y={32} className="tv-node-rect-separator">
+            <text x={RECT_CONTENT.separatorX} y={48} className="tv-node-rect-separator">
               :
             </text>
-
-            {attributeLines.map((line, index) => (
-              <text
-                key={`${node.id}-attr-${index}`}
-                x={8}
-                y={32 + index * 15}
-                className="tv-node-rect-value tv-node-rect-value--small"
-              >
-                {line}
-              </text>
-            ))}
+            {renderMultilineText(RECT_CONTENT.valueX, 46, attributeLines, "tv-node-rect-value")}
           </motion.g>
         ) : (
           <motion.g
@@ -185,9 +227,6 @@ ${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
 
             <text textAnchor="middle" dy="0.35em" className="tv-node-id">
               {node.id}
-            </text>
-            <text textAnchor="middle" y={50} className="tv-node-tag">
-              {node.tag}
             </text>
           </motion.g>
         )}

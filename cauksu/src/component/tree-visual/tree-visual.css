@@ -1,7 +1,7 @@
 .tv-root {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   height: 100%;
   min-height: 0;
 }
@@ -40,7 +40,8 @@
 }
 
 .tv-canvas-wrapper {
-  overflow: auto;
+  position: relative;
+  overflow: hidden;
   border: 1px solid #d9d9d9;
   border-radius: 16px;
   background: #fafafa;
@@ -49,6 +50,7 @@
   cursor: grab;
 }
 
+.tv-canvas-wrapper:active,
 .tv-canvas-wrapper.is-panning {
   cursor: grabbing;
   user-select: none;
@@ -56,6 +58,8 @@
 
 .tv-svg {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .tv-edge {
@@ -79,7 +83,7 @@
 }
 
 .tv-node-group {
-  /* cursor: default; */
+  cursor: default;
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -141,21 +145,21 @@
 }
 
 .tv-node-rect-label {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   fill: #1f2937;
   user-select: none;
 }
 
 .tv-node-rect-separator {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   fill: #1f2937;
   user-select: none;
 }
 
 .tv-node-rect-value {
-  font-size: 12px;
+  font-size: 15px;
   fill: #1f2937;
   user-select: none;
 }
@@ -210,9 +214,26 @@
   cursor: pointer;
 }
 
-.tv-log-item.is-active {
+.tv-log-item--visited {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tv-log-item--matched {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.tv-log-item--active {
   border-color: #f59e0b;
   background: #fffbeb;
+  color: #b45309;
+}
+
+.tv-log-item--default {
+  color: #111827;
 }
 
 .tv-stage {
@@ -244,13 +265,29 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
+.tv-floating-log-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .tv-floating-log.is-dragging .tv-floating-log-handle {
   cursor: grabbing;
 }
 
-.tv-floating-log-hint {
+.tv-floating-log-toggle {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #1e293b;
+  padding: 4px 10px;
   font-size: 12px;
-  color: #6b7280;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tv-floating-log-toggle:hover {
+  background: #e2e8f0;
 }
 
 .tv-floating-log .tv-log-panel {
