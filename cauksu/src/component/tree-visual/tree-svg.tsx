@@ -1,6 +1,7 @@
 import { useMemo, type RefObject } from "react";
 import type { TraversalLogItem, TreeLayoutResult } from "./types";
 import { getTraversalState } from "./utils/tree-traversal-state";
+import { useCanvasPan } from "./hooks/canvas-pan";
 import TreeEdge from "./tree-edge";
 import TreeNode from "./tree-node";
 
@@ -30,6 +31,8 @@ export default function TreeSvg({
     [traversalLog, activeStep]
   );
 
+  const { isPanning, handleMouseDown } = useCanvasPan(containerRef);
+
   const nodeStateMap = useMemo(() => {
     const map = new Map<number, "default" | "visited" | "matched" | "active">();
 
@@ -40,12 +43,12 @@ export default function TreeSvg({
         state = "visited";
       }
 
-      if (traversalState.matchedNodeIds.has(node.id)) {
-        state = "matched";
-      }
-
       if (traversalState.currentNodeId === node.id) {
         state = "active";
+      }
+
+      if (traversalState.matchedNodeIds.has(node.id)) {
+        state = "matched";
       }
 
       map.set(node.id, state);
@@ -59,7 +62,12 @@ export default function TreeSvg({
   const edgeVariant = isAllDetailsExpanded ? "curved" : "straight";
 
   return (
-    <div ref={containerRef} className="tv-canvas-wrapper">
+    <div
+      ref={containerRef}
+      className={`tv-canvas-wrapper ${isPanning ? "is-panning" : ""}`}
+      onMouseDown={handleMouseDown}
+      onDragStart={(e) => e.preventDefault()}
+    >
       <svg
         width={scaledWidth}
         height={scaledHeight}

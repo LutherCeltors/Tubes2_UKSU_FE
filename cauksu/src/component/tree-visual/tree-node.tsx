@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import type { LayoutNode } from "./types";
 
 type TreeNodeProps = {
@@ -73,10 +74,12 @@ export default function TreeNode({
   const levelLabelY = isExpanded ? -68 : -48;
 
   return (
-    <g
-      transform={`translate(${node.x}, ${node.y})`}
+    <motion.g
       className="tv-node-group is-clickable"
       onClick={() => onToggle(node.id)}
+      initial={false}
+      animate={{ x: node.x, y: node.y }}
+      transition={{ type: "spring", stiffness: 180, damping: 24 }}
     >
       <title>
         {`Node ${node.id}
@@ -95,86 +98,100 @@ ${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
         Level {node.depth}
       </text>
 
-      {isExpanded ? (
-        <>
-          <rect
-            x={-122}
-            y={-50}
-            width={244}
-            height={126}
-            rx={16}
-            ry={16}
-            className={`tv-node-shape tv-node-shape--${state}`}
-          />
+      <AnimatePresence mode="wait" initial={false}>
+        {isExpanded ? (
+          <motion.g
+            key="expanded"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2 }}
+          >
+            <rect
+              x={-122}
+              y={-50}
+              width={244}
+              height={126}
+              rx={16}
+              ry={16}
+              className={`tv-node-shape tv-node-shape--${state}`}
+            />
 
-          <rect
-            x={92}
-            y={-40}
-            width={20}
-            height={20}
-            rx={6}
-            ry={6}
-            className="tv-node-badge"
-          />
-          <text x={102} y={-26} textAnchor="middle" className="tv-node-badge-symbol">
-            −
-          </text>
-
-          <text x={-96} y={-16} className="tv-node-rect-label">
-            id
-          </text>
-          <text x={-10} y={-16} className="tv-node-rect-separator">
-            :
-          </text>
-          <text x={8} y={-16} className="tv-node-rect-value">
-            {node.id}
-          </text>
-
-          <text x={-96} y={8} className="tv-node-rect-label">
-            tag
-          </text>
-          <text x={-10} y={8} className="tv-node-rect-separator">
-            :
-          </text>
-          <text x={8} y={8} className="tv-node-rect-value">
-            {node.tag}
-          </text>
-
-          <text x={-96} y={32} className="tv-node-rect-label">
-            attribute
-          </text>
-          <text x={-10} y={32} className="tv-node-rect-separator">
-            :
-          </text>
-
-          {attributeLines.map((line, index) => (
-            <text
-              key={`${node.id}-attr-${index}`}
-              x={8}
-              y={32 + index * 15}
-              className="tv-node-rect-value tv-node-rect-value--small"
-            >
-              {line}
+            <rect
+              x={92}
+              y={-40}
+              width={20}
+              height={20}
+              rx={6}
+              ry={6}
+              className="tv-node-badge"
+            />
+            <text x={102} y={-26} textAnchor="middle" className="tv-node-badge-symbol">
+              −
             </text>
-          ))}
-        </>
-      ) : (
-        <>
-          <circle r={30} className={`tv-node-shape tv-node-shape--${state}`} />
 
-          <circle cx={20} cy={-20} r={10} className="tv-node-badge" />
-          <text x={20} y={-16} textAnchor="middle" className="tv-node-badge-symbol">
-            +
-          </text>
+            <text x={-96} y={-16} className="tv-node-rect-label">
+              id
+            </text>
+            <text x={-10} y={-16} className="tv-node-rect-separator">
+              :
+            </text>
+            <text x={8} y={-16} className="tv-node-rect-value">
+              {node.id}
+            </text>
 
-          <text textAnchor="middle" dy="0.35em" className="tv-node-id">
-            {node.id}
-          </text>
-          <text textAnchor="middle" y={50} className="tv-node-tag">
-            {node.tag}
-          </text>
-        </>
-      )}
-    </g>
+            <text x={-96} y={8} className="tv-node-rect-label">
+              tag
+            </text>
+            <text x={-10} y={8} className="tv-node-rect-separator">
+              :
+            </text>
+            <text x={8} y={8} className="tv-node-rect-value">
+              {node.tag}
+            </text>
+
+            <text x={-96} y={32} className="tv-node-rect-label">
+              attribute
+            </text>
+            <text x={-10} y={32} className="tv-node-rect-separator">
+              :
+            </text>
+
+            {attributeLines.map((line, index) => (
+              <text
+                key={`${node.id}-attr-${index}`}
+                x={8}
+                y={32 + index * 15}
+                className="tv-node-rect-value tv-node-rect-value--small"
+              >
+                {line}
+              </text>
+            ))}
+          </motion.g>
+        ) : (
+          <motion.g
+            key="collapsed"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.2 }}
+          >
+            <circle r={30} className={`tv-node-shape tv-node-shape--${state}`} />
+
+            <circle cx={20} cy={-20} r={10} className="tv-node-badge" />
+            <text x={20} y={-16} textAnchor="middle" className="tv-node-badge-symbol">
+              +
+            </text>
+
+            <text textAnchor="middle" dy="0.35em" className="tv-node-id">
+              {node.id}
+            </text>
+            <text textAnchor="middle" y={50} className="tv-node-tag">
+              {node.tag}
+            </text>
+          </motion.g>
+        )}
+      </AnimatePresence>
+    </motion.g>
   );
 }

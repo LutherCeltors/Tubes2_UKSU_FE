@@ -64,6 +64,12 @@
   background: #fafafa;
   min-height: 680px;
   height: 70vh;
+  cursor: grab;
+}
+
+.tv-canvas-wrapper.is-panning {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .tv-svg {
@@ -91,7 +97,9 @@
 }
 
 .tv-node-group {
-  cursor: default;
+  /* cursor: default; */
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .tv-node-group.is-clickable {

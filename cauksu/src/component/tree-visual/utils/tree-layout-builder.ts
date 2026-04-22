@@ -2,8 +2,8 @@ import type { DomTreeNode, LayoutEdge, LayoutNode, TreeLayoutResult } from "../t
 
 export type TreeLayoutMode = "tree" | "indented";
 
-const TREE_HORIZONTAL_GAP = 280;
-const TREE_VERTICAL_GAP = 190;
+const TREE_HORIZONTAL_GAP = 270;
+const TREE_VERTICAL_GAP = 185;
 const TREE_PADDING_X = 140;
 const TREE_PADDING_Y = 110;
 
