@@ -6,10 +6,10 @@ import type { DomTraversalResponse } from "./component/tree-visual/types";
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 type RequestData = {
-  mode: "URL" | "MANUAL"
+  mode: "url" | "html"
   url?: string
   html?: string
-  algorithm: "BFS" | "DFS"
+  algorithm: "bfs" | "dfs"
   selector: string
   resultMode: "TOP" | "ALL"
   topN?: number
@@ -35,8 +35,8 @@ function App() {
   const currentData = treeData ?? sampleData;
 
   const handleSubmit = async () => {
-    const data = {
-      mode,
+    const data : RequestData = {
+      mode: mode === "URL" ? "url" : "html",
       url: mode === "URL" ? url : undefined,
       html: mode === "MANUAL" ? html : undefined,
       algorithm,
@@ -47,6 +47,8 @@ function App() {
 
     setIsLoading(true);
     setErrorMessage("");
+
+    console.log("Payload ke backend:", data)
 
     try {
       const res = await fetch("http://localhost:8080/api/data", {
