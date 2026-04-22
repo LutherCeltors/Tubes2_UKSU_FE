@@ -32,6 +32,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const[isLeftMenuOpen, setLeftMenuOpen] = useState(true);
+  const currentData = treeData ?? sampleData;
 
   const handleSubmit = async () => {
     const data = {
@@ -165,21 +166,40 @@ function App() {
             </button>
 
             {errorMessage && (
-              <div className = "bg-red100 text-red-700 p-2 rounded">
+              <div className = "app-error-box">
                 {errorMessage}
               </div>
             )}
+
+            <section className="app-result-summary">
+              <div className="app-result-summary-header">
+                <h2>Result Summary</h2>
+              </div>
+
+              <div className="app-summary-grid">
+                <div className="app-summary-card">
+                  <span className="app-summary-label">Execution Time</span>
+                  <strong>{currentData.executionTimeMs} ms</strong>
+                </div>
+
+                <div className="app-summary-card">
+                  <span className="app-summary-label">Nodes Visited</span>
+                  <strong>{currentData.nodesVisited}</strong>
+                </div>
+
+                <div className="app-summary-card">
+                  <span className="app-summary-label">Max Depth</span>
+                  <strong>{currentData.maxDepth}</strong>
+                </div>
+              </div>
+            </section>
 
           </div>
         </aside>
 
         {/* Output field */}
         <div className='app-main'>
-            { treeData ? (
-              <TreeVisualizer key={visualizationKey} data ={treeData}/> 
-            ) : (
-              <TreeVisualizer key={visualizationKey} data ={sampleData}/>
-            )}
+              <TreeVisualizer key={visualizationKey} data ={currentData}/> 
         </div>
       </div>
     </div>

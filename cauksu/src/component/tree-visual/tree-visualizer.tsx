@@ -117,23 +117,6 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
 
   return (
     <section className="tv-root">
-      <div className="tv-stats">
-        <div className="tv-stat-card">
-          <span className="tv-stat-label">Execution Time</span>
-          <strong>{data.executionTimeMs} ms</strong>
-        </div>
-
-        <div className="tv-stat-card">
-          <span className="tv-stat-label">Nodes Visited</span>
-          <strong>{data.nodesVisited}</strong>
-        </div>
-
-        <div className="tv-stat-card">
-          <span className="tv-stat-label">Max Depth</span>
-          <strong>{data.maxDepth}</strong>
-        </div>
-      </div>
-
       <div className="tv-controls">
         <div className="tv-control-group">
           <button

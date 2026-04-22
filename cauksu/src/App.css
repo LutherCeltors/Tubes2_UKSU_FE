@@ -96,3 +96,78 @@ body,
   outline: 2px solid #60a5fa;
   outline-offset: 2px;
 }
+
+.app-error-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.app-result-summary {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.app-result-summary-header h2 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.app-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.app-summary-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.app-summary-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.app-sidebar,
+.tv-canvas-wrapper,
+.tv-floating-log .tv-log-panel {
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #cbd5e1;
+}
+
+.app-sidebar::-webkit-scrollbar,
+.tv-canvas-wrapper::-webkit-scrollbar,
+.tv-floating-log .tv-log-panel::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.app-sidebar::-webkit-scrollbar-track,
+.tv-canvas-wrapper::-webkit-scrollbar-track,
+.tv-floating-log .tv-log-panel::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb,
+.tv-canvas-wrapper::-webkit-scrollbar-thumb,
+.tv-floating-log .tv-log-panel::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.85);
+  border-radius: 999px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb:hover,
+.tv-canvas-wrapper::-webkit-scrollbar-thumb:hover,
+.tv-floating-log .tv-log-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 65, 85, 0.95);
+}
