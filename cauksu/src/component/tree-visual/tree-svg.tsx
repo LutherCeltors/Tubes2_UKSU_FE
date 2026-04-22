@@ -1,21 +1,27 @@
-import { useMemo } from "react";
-import type { DomTraversalResponse } from "./types";
-import { buildTreeLayout } from "./utils/tree-layout-builder";
+import { useMemo, type RefObject } from "react";
+import type { TraversalLogItem, TreeLayoutResult } from "./types";
 import { getTraversalState } from "./utils/tree-traversal-state";
 import TreeEdge from "./tree-edge";
 import TreeNode from "./tree-node";
 
 type TreeSvgProps = {
-  data: DomTraversalResponse;
+  layout: TreeLayoutResult;
+  traversalLog: TraversalLogItem[];
   activeStep: number;
+  zoom: number;
+  containerRef: RefObject<HTMLDivElement | null>;
 };
 
-export default function TreeSvg({ data, activeStep }: TreeSvgProps) {
-  const layout = useMemo(() => buildTreeLayout(data.tree), [data.tree]);
-
+export default function TreeSvg({
+  layout,
+  traversalLog,
+  activeStep,
+  zoom,
+  containerRef,
+}: TreeSvgProps) {
   const traversalState = useMemo(
-    () => getTraversalState(data.traversalLog, activeStep),
-    [data.traversalLog, activeStep]
+    () => getTraversalState(traversalLog, activeStep),
+    [traversalLog, activeStep]
   );
 
   const nodeStateMap = useMemo(() => {
@@ -35,20 +41,23 @@ export default function TreeSvg({ data, activeStep }: TreeSvgProps) {
       if (traversalState.matchedNodeIds.has(node.id)) {
         state = "matched";
       }
-
       map.set(node.id, state);
     }
 
     return map;
   }, [layout.nodes, traversalState]);
 
+  const scaledWidth = layout.width * zoom;
+  const scaledHeight = layout.height * zoom;
+
   return (
-    <div className="tv-canvas-wrapper">
+    <div ref={containerRef} className="tv-canvas-wrapper">
       <svg
-        width={layout.width}
-        height={layout.height}
+        width={scaledWidth}
+        height={scaledHeight}
         viewBox={`0 0 ${layout.width} ${layout.height}`}
         className="tv-svg"
+        preserveAspectRatio="xMinYMin meet"
       >
         {layout.edges.map((edge) => {
           let edgeState: "default" | "visited" | "active" = "default";

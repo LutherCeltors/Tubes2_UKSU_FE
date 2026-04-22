@@ -27,13 +27,32 @@
 .tv-controls {
   display: flex;
   align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tv-control-group {
+  display: flex;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
+.tv-control-divider {
+  width: 1px;
+  height: 24px;
+  background: #d1d5db;
+}
+
+.tv-zoom-label {
+  min-width: 52px;
+  text-align: center;
+  font-weight: 600;
+}
+
 .tv-main-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
   align-items: start;
 }
@@ -43,7 +62,8 @@
   border: 1px solid #d9d9d9;
   border-radius: 16px;
   background: #fafafa;
-  min-height: 500px;
+  min-height: 680px;
+  height: 70vh;
 }
 
 .tv-svg {
@@ -65,6 +85,10 @@
 .tv-edge--active {
   stroke: #f59e0b;
   stroke-width: 3.5;
+}
+
+.tv-node-group {
+  cursor: default;
 }
 
 .tv-node {
@@ -100,7 +124,28 @@
 
 .tv-node-tag {
   font-size: 12px;
-  fill: #4b5563;
+  font-weight: 600;
+  fill: #374151;
+  user-select: none;
+}
+
+.tv-node-root-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #7c3aed;
+  user-select: none;
+}
+
+.tv-node-level-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #0369a1;
+  user-select: none;
+}
+
+.tv-node-attr {
+  font-size: 11px;
+  fill: #6b7280;
   user-select: none;
 }
 

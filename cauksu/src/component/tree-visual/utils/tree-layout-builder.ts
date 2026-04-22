@@ -1,9 +1,9 @@
 import type { DomTreeNode, LayoutEdge, LayoutNode, TreeLayoutResult } from "../types";
 
-const HORIZONTAL_GAP = 120;
-const VERTICAL_GAP = 110;
-const PADDING_X = 80;
-const PADDING_Y = 80;
+const HORIZONTAL_GAP = 170;
+const VERTICAL_GAP = 180;
+const PADDING_X = 100;
+const PADDING_Y = 100;
 
 type DraftNode = {
   id: number;
@@ -49,7 +49,7 @@ export function buildTreeLayout(root: DomTreeNode): TreeLayoutResult {
 
   traverse(root, 0, null);
 
-  const width = Math.max(nextLeafX + PADDING_X * 2, 600);
+  const width = Math.max(nextLeafX + PADDING_X * 2, 800);
   const height = (maxDepth + 1) * VERTICAL_GAP + PADDING_Y * 2;
 
   const nodes: LayoutNode[] = draftNodes.map((node) => ({
