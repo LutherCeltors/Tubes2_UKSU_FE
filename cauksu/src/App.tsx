@@ -1,6 +1,8 @@
 
 import './App.css'
 import { useState } from 'react'
+import TreeVisualizer from "./component/tree-visual/tree-visualizer";
+import type { DomTraversalResponse } from "./component/tree-visual/types";
 
 type RequestData = {
   mode: "URL" | "MANUAL"
@@ -23,6 +25,11 @@ function App() {
   const [resultMode, setResultMode] = useState<"TOP" | "ALL">("ALL")
   const [topN, setTopN] = useState(10)
 
+  const [treeData, setTreeData] = useState<DomTraversalResponse | null>(null);
+  const [visualizationKey, setVisualizationKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleSubmit = async () => {
     const data = {
       mode,
@@ -34,16 +41,33 @@ function App() {
       topN: resultMode === "TOP" ? topN : undefined,
     }
 
-    const res = await fetch("http://localhost:8080/api/data", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    })
+    setIsLoading(true);
+    setErrorMessage("");
 
-    const result = await res.json()
-    console.log(result)
+    try {
+      const res = await fetch("http://localhost:8080/api/data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        throw new Error(`Request gagal dengan status ${res.status}`);
+      }
+
+      const result: DomTraversalResponse = await res.json();
+      console.log(result)
+      setTreeData(result);
+      setVisualizationKey((prev) => prev + 1);
+
+    }catch (error) {
+      console.error(error);
+      setErrorMessage("Gagal mengambil data visualisasi.");
+      setTreeData(null);
+    }finally{
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -125,18 +149,88 @@ function App() {
             onClick={handleSubmit}
             className="bg-green-500 text-white p-2 rounded mt-2"
           >
-            Search
+            {isLoading ? "Searching..." : "Search"}
           </button>
+
+          {errorMessage && (
+            <div className = "bg-red100 text-red-700 p-2 rounded">
+              {errorMessage}
+            </div>
+          )}
 
         </div>
 
         {/* Output field */}
         <div className='flex flex-col flex-[3] bg-gray-700'>
-
+          <div style={{ padding: "24px" }}>
+            { treeData ? (
+              <TreeVisualizer key={visualizationKey} data ={treeData}/> 
+            ) : (
+              <TreeVisualizer key={visualizationKey} data ={sampleData}/>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
+
+const sampleData: DomTraversalResponse = {
+  executionTimeMs: 2.5,
+  nodesVisited: 15,
+  maxDepth: 4,
+  tree: {
+    id: 1,
+    tag: "html",
+    attributes: {},
+    children: [
+      {
+        id: 2,
+        tag: "body",
+        attributes: { class: "container" },
+        children: [
+          {
+            id: 5,
+            tag: "div",
+            attributes: { id: "hero" },
+            children: [
+              {
+                id: 8,
+                tag: "h1",
+                attributes: {},
+                children: [],
+              },
+              {
+                id: 9,
+                tag: "p",
+                attributes: {},
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 6,
+            tag: "section",
+            attributes: {},
+            children: [
+              {
+                id: 10,
+                tag: "button",
+                attributes: {},
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  traversalLog: [
+    { nodeId: 1, tag: "html", status: "visited" },
+    { nodeId: 2, tag: "body", status: "visited" },
+    { nodeId: 5, tag: "div", status: "matched" },
+  ],
+};
 
 export default App

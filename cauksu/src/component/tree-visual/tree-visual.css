@@ -1,0 +1,143 @@
+.tv-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tv-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.tv-stat-card {
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #ffffff;
+}
+
+.tv-stat-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.tv-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tv-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.tv-canvas-wrapper {
+  overflow: auto;
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  background: #fafafa;
+  min-height: 500px;
+}
+
+.tv-svg {
+  display: block;
+}
+
+.tv-edge {
+  stroke-width: 2.5;
+}
+
+.tv-edge--default {
+  stroke: #bfc6d1;
+}
+
+.tv-edge--visited {
+  stroke: #60a5fa;
+}
+
+.tv-edge--active {
+  stroke: #f59e0b;
+  stroke-width: 3.5;
+}
+
+.tv-node {
+  stroke-width: 2.5;
+}
+
+.tv-node--default {
+  fill: #ffffff;
+  stroke: #7c8aa5;
+}
+
+.tv-node--visited {
+  fill: #dbeafe;
+  stroke: #60a5fa;
+}
+
+.tv-node--matched {
+  fill: #dcfce7;
+  stroke: #22c55e;
+}
+
+.tv-node--active {
+  fill: #fef3c7;
+  stroke: #f59e0b;
+}
+
+.tv-node-id {
+  font-size: 15px;
+  font-weight: 700;
+  fill: #1f2937;
+  user-select: none;
+}
+
+.tv-node-tag {
+  font-size: 12px;
+  fill: #4b5563;
+  user-select: none;
+}
+
+.tv-log-panel {
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  padding: 12px;
+  background: #ffffff;
+  max-height: 700px;
+  overflow: auto;
+}
+
+.tv-log-panel h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.tv-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tv-log-item {
+  display: grid;
+  grid-template-columns: 52px 80px 1fr auto;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.tv-log-item.is-active {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
