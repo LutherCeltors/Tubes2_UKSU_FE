@@ -4,16 +4,18 @@ type TraversalLogPanelProps = {
   log: TraversalLogItem[];
   activeStep: number;
   onSelectStep: (step: number) => void;
+  showTitle?: boolean;
 };
 
 export default function TraversalLogPanel({
   log,
   activeStep,
   onSelectStep,
+  showTitle = true,
 }: TraversalLogPanelProps) {
   return (
     <div className="tv-log-panel">
-      <h3>Traversal Log</h3>
+      {showTitle && <h3>Traversal Log</h3>}
 
       <div className="tv-log-list">
         {log.map((item, index) => (

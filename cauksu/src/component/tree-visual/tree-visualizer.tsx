@@ -3,6 +3,7 @@ import type { DomTraversalResponse, DomTreeNode } from "./types";
 import TreeSvg from "./tree-svg";
 import TraversalLogPanel from "./tree-traversal-log-panel";
 import { useTraversalPlayback } from "./hooks/traversal-playback";
+import { useDraggablePanel } from "./hooks/dragable-panel";
 import { buildTreeLayout, type TreeLayoutMode } from "./utils/tree-layout-builder";
 import "./tree-visual.css";
 
@@ -28,7 +29,6 @@ function collectAllNodeIds(root: DomTreeNode) {
 
 export default function TreeVisualizer({ data }: TreeVisualizerProps) {
   const maxStep = data.traversalLog.length - 1;
-
   const allNodeIds = useMemo(() => collectAllNodeIds(data.tree), [data.tree]);
 
   const [activeStep, setActiveStep] = useState(() =>
@@ -41,7 +41,6 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
   );
 
   const isAllDetailsExpanded = expandedDetailNodeIds.size === allNodeIds.length;
-
   const layoutMode: TreeLayoutMode = isAllDetailsExpanded ? "indented" : "tree";
 
   const layout = useMemo(
@@ -50,6 +49,14 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
   );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    panelRef,
+    position: logPosition,
+    isDragging: isDraggingLog,
+    handlePointerDown: handleLogPointerDown,
+  } = useDraggablePanel(stageRef, { x: 16, y: 16 });
 
   useTraversalPlayback(isPlaying, activeStep, maxStep, (nextStep) => {
     if (nextStep >= maxStep) {
@@ -200,7 +207,7 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
         </div>
       </div>
 
-      <div className="tv-main-layout">
+      <div className="tv-stage" ref={stageRef}>
         <TreeSvg
           layout={layout}
           traversalLog={data.traversalLog}
@@ -212,14 +219,32 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
           onToggleNode={handleToggleNode}
         />
 
-        <TraversalLogPanel
-          log={data.traversalLog}
-          activeStep={activeStep}
-          onSelectStep={(step) => {
-            setIsPlaying(false);
-            setActiveStep(step);
+        <div
+          ref={panelRef}
+          className={`tv-floating-log ${isDraggingLog ? "is-dragging" : ""}`}
+          style={{
+            left: `${logPosition.x}px`,
+            top: `${logPosition.y}px`,
           }}
-        />
+        >
+          <div
+            className="tv-floating-log-handle"
+            onPointerDown={handleLogPointerDown}
+          >
+            <span>Traversal Log</span>
+            <span className="tv-floating-log-hint">drag</span>
+          </div>
+
+          <TraversalLogPanel
+            log={data.traversalLog}
+            activeStep={activeStep}
+            onSelectStep={(step) => {
+              setIsPlaying(false);
+              setActiveStep(step);
+            }}
+            showTitle={false}
+          />
+        </div>
       </div>
     </section>
   );

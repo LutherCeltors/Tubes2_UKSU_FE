@@ -3,6 +3,7 @@ import './App.css'
 import { useState } from 'react'
 import TreeVisualizer from "./component/tree-visual/tree-visualizer";
 import type { DomTraversalResponse } from "./component/tree-visual/types";
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 type RequestData = {
   mode: "URL" | "MANUAL"
@@ -29,6 +30,8 @@ function App() {
   const [visualizationKey, setVisualizationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const[isLeftMenuOpen, setLeftMenuOpen] = useState(true);
 
   const handleSubmit = async () => {
     const data = {
@@ -71,104 +74,112 @@ function App() {
   }
 
   return (
-    <div className='bg-gray-700 h-screen'>
-      <header className='bg-gray-800 h-20 flex items-center'>
+    <div className='app-shell'>
+      <header className="app-header">
+        <button className="app-menu-toggle" 
+          onClick={() => setLeftMenuOpen((prev) => !prev)}
+        >
+          {isLeftMenuOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
+
         <h1 className='text-white pl-8'>CAUKSU</h1>
+
       </header>
-      <div className='flex h-full'>
+
+      <div className='app-body'>
         {/* Input field */}
-        <div className="flex flex-col flex-[1] bg-gray-200 gap-3 p-2">
+        <aside className={`app-sidebar ${isLeftMenuOpen ? "open" : "collapsed"}`}>
+          <div className="flex flex-col flex-1 bg-gray-200 gap-3 p-2">
 
-          {/* MODE */}
-          <button
-            onClick={() => setMode(mode === "URL" ? "MANUAL" : "URL")}
-            className="bg-blue-500 text-white p-2 rounded"
-          >
-            Mode: {mode}
-          </button>
+            {/* MODE */}
+            <button
+              onClick={() => setMode(mode === "URL" ? "MANUAL" : "URL")}
+              className="bg-blue-500 text-white p-2 rounded"
+              >
+              Mode: {mode}
+            </button>
 
-          {/* URL / HTML */}
-          {mode === "URL" ? (
+            {/* URL / HTML */}
+            {mode === "URL" ? (
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://entahapalah.com"
+                className="p-2 border rounded"
+              />
+            ) : (
+              <textarea
+                value={html}
+                onChange={(e) => setHtml(e.target.value)}
+                placeholder="<h1>Enter HTML<h1>"
+                className="p-2 border rounded h-32"
+              />
+            )}
+
+            {/* ALGORITHM */}
+            <select
+              value={algorithm}
+              onChange={(e) => setAlgorithm(e.target.value as "bfs" | "dfs")}
+              className="p-2 border rounded"
+            >
+              <option value="bfs">BFS</option>
+              <option value="dfs">DFS</option>
+            </select>
+
+            {/* CSS SELECTOR */}
             <input
               type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://entahapalah.com"
+              value={selector}
+              onChange={(e) => setSelector(e.target.value)}
+              placeholder=".box, #header, div > p"
               className="p-2 border rounded"
             />
-          ) : (
-            <textarea
-              value={html}
-              onChange={(e) => setHtml(e.target.value)}
-              placeholder="<h1>Enter HTML<h1>"
-              className="p-2 border rounded h-32"
-            />
-          )}
 
-          {/* ALGORITHM */}
-          <select
-            value={algorithm}
-            onChange={(e) => setAlgorithm(e.target.value as "bfs" | "dfs")}
-            className="p-2 border rounded"
-          >
-            <option value="bfs">BFS</option>
-            <option value="dfs">DFS</option>
-          </select>
-
-          {/* CSS SELECTOR */}
-          <input
-            type="text"
-            value={selector}
-            onChange={(e) => setSelector(e.target.value)}
-            placeholder=".box, #header, div > p"
-            className="p-2 border rounded"
-          />
-
-          {/* RESULT MODE */}
-          <select
-            value={resultMode}
-            onChange={(e) => setResultMode(e.target.value as "TOP" | "ALL")}
-            className="p-2 border rounded"
-          >
-            <option value="ALL">All</option>
-            <option value="TOP">Top N</option>
-          </select>
-
-          {/* TOP N */}
-          {resultMode === "TOP" && (
-            <input
-              type="number"
-              value={topN}
-              onChange={(e) => setTopN(Number(e.target.value))}
+            {/* RESULT MODE */}
+            <select
+              value={resultMode}
+              onChange={(e) => setResultMode(e.target.value as "TOP" | "ALL")}
               className="p-2 border rounded"
-            />
-          )}
+            >
+              <option value="ALL">All</option>
+              <option value="TOP">Top N</option>
+            </select>
 
-          {/* SUBMIT */}
-          <button
-            onClick={handleSubmit}
-            className="bg-green-500 text-white p-2 rounded mt-2"
-          >
-            {isLoading ? "Searching..." : "Search"}
-          </button>
+            {/* TOP N */}
+            {resultMode === "TOP" && (
+              <input
+                type="number"
+                value={topN}
+                onChange={(e) => setTopN(Number(e.target.value))}
+                className="p-2 border rounded"
+              />
+            )}
 
-          {errorMessage && (
-            <div className = "bg-red100 text-red-700 p-2 rounded">
-              {errorMessage}
-            </div>
-          )}
+            {/* SUBMIT */}
+            <button
+              onClick={handleSubmit}
+              className="bg-green-500 text-white p-2 rounded mt-2"
+            >
+              {isLoading ? "Searching..." : "Search"}
+            </button>
 
-        </div>
+            {errorMessage && (
+              <div className = "bg-red100 text-red-700 p-2 rounded">
+                {errorMessage}
+              </div>
+            )}
+
+          </div>
+        </aside>
 
         {/* Output field */}
-        <div className='flex flex-col flex-[3] bg-gray-700'>
-          <div style={{ padding: "24px" }}>
+        <div className='app-main'>
             { treeData ? (
               <TreeVisualizer key={visualizationKey} data ={treeData}/> 
             ) : (
               <TreeVisualizer key={visualizationKey} data ={sampleData}/>
             )}
-          </div>
         </div>
       </div>
     </div>
