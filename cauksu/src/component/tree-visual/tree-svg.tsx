@@ -10,6 +10,9 @@ type TreeSvgProps = {
   activeStep: number;
   zoom: number;
   containerRef: RefObject<HTMLDivElement | null>;
+  expandedDetailNodeIds: Set<number>;
+  isAllDetailsExpanded: boolean;
+  onToggleNode: (nodeId: number) => void;
 };
 
 export default function TreeSvg({
@@ -18,6 +21,9 @@ export default function TreeSvg({
   activeStep,
   zoom,
   containerRef,
+  expandedDetailNodeIds,
+  isAllDetailsExpanded,
+  onToggleNode,
 }: TreeSvgProps) {
   const traversalState = useMemo(
     () => getTraversalState(traversalLog, activeStep),
@@ -34,13 +40,14 @@ export default function TreeSvg({
         state = "visited";
       }
 
+      if (traversalState.matchedNodeIds.has(node.id)) {
+        state = "matched";
+      }
+
       if (traversalState.currentNodeId === node.id) {
         state = "active";
       }
 
-      if (traversalState.matchedNodeIds.has(node.id)) {
-        state = "matched";
-      }
       map.set(node.id, state);
     }
 
@@ -49,6 +56,7 @@ export default function TreeSvg({
 
   const scaledWidth = layout.width * zoom;
   const scaledHeight = layout.height * zoom;
+  const edgeVariant = isAllDetailsExpanded ? "curved" : "straight";
 
   return (
     <div ref={containerRef} className="tv-canvas-wrapper">
@@ -78,6 +86,7 @@ export default function TreeSvg({
               x2={edge.x2}
               y2={edge.y2}
               state={edgeState}
+              variant={edgeVariant}
             />
           );
         })}
@@ -87,6 +96,8 @@ export default function TreeSvg({
             key={node.id}
             node={node}
             state={nodeStateMap.get(node.id) ?? "default"}
+            isExpanded={expandedDetailNodeIds.has(node.id)}
+            onToggle={onToggleNode}
           />
         ))}
       </svg>

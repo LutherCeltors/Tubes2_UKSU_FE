@@ -72,6 +72,9 @@
 
 .tv-edge {
   stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .tv-edge--default {
@@ -91,26 +94,30 @@
   cursor: default;
 }
 
-.tv-node {
+.tv-node-group.is-clickable {
+  cursor: pointer;
+}
+
+.tv-node-shape {
   stroke-width: 2.5;
 }
 
-.tv-node--default {
+.tv-node-shape--default {
   fill: #ffffff;
   stroke: #7c8aa5;
 }
 
-.tv-node--visited {
+.tv-node-shape--visited {
   fill: #dbeafe;
   stroke: #60a5fa;
 }
 
-.tv-node--matched {
+.tv-node-shape--matched {
   fill: #dcfce7;
   stroke: #22c55e;
 }
 
-.tv-node--active {
+.tv-node-shape--active {
   fill: #fef3c7;
   stroke: #f59e0b;
 }
@@ -143,9 +150,40 @@
   user-select: none;
 }
 
-.tv-node-attr {
+.tv-node-rect-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #1f2937;
+  user-select: none;
+}
+
+.tv-node-rect-separator {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #1f2937;
+  user-select: none;
+}
+
+.tv-node-rect-value {
+  font-size: 12px;
+  fill: #1f2937;
+  user-select: none;
+}
+
+.tv-node-rect-value--small {
   font-size: 11px;
-  fill: #6b7280;
+}
+
+.tv-node-badge {
+  fill: #e5e7eb;
+  stroke: #9ca3af;
+  stroke-width: 1.5;
+}
+
+.tv-node-badge-symbol {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #374151;
   user-select: none;
 }
 

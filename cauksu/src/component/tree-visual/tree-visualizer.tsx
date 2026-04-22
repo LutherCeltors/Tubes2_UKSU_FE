@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from "react";
-import type { DomTraversalResponse } from "./types";
+import type { DomTraversalResponse, DomTreeNode } from "./types";
 import TreeSvg from "./tree-svg";
 import TraversalLogPanel from "./tree-traversal-log-panel";
 import { useTraversalPlayback } from "./hooks/traversal-playback";
-import { buildTreeLayout } from "./utils/tree-layout-builder";
+import { buildTreeLayout, type TreeLayoutMode } from "./utils/tree-layout-builder";
 import "./tree-visual.css";
 
 type TreeVisualizerProps = {
@@ -14,15 +14,40 @@ function clampZoom(value: number) {
   return Math.min(Math.max(value, 0.25), 3);
 }
 
+function collectAllNodeIds(root: DomTreeNode) {
+  const ids: number[] = [];
+
+  function traverse(node: DomTreeNode) {
+    ids.push(node.id);
+    (node.children ?? []).forEach(traverse);
+  }
+
+  traverse(root);
+  return ids;
+}
+
 export default function TreeVisualizer({ data }: TreeVisualizerProps) {
   const maxStep = data.traversalLog.length - 1;
-  const layout = useMemo(() => buildTreeLayout(data.tree), [data.tree]);
+
+  const allNodeIds = useMemo(() => collectAllNodeIds(data.tree), [data.tree]);
 
   const [activeStep, setActiveStep] = useState(() =>
     data.traversalLog.length > 0 ? 0 : -1
   );
   const [isPlaying, setIsPlaying] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [expandedDetailNodeIds, setExpandedDetailNodeIds] = useState<Set<number>>(
+    () => new Set()
+  );
+
+  const isAllDetailsExpanded = expandedDetailNodeIds.size === allNodeIds.length;
+
+  const layoutMode: TreeLayoutMode = isAllDetailsExpanded ? "indented" : "tree";
+
+  const layout = useMemo(
+    () => buildTreeLayout(data.tree, layoutMode),
+    [data.tree, layoutMode]
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -59,6 +84,28 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
     const scaleY = availableHeight / layout.height;
 
     setZoom(clampZoom(Math.min(scaleX, scaleY)));
+  };
+
+  const handleToggleNode = (nodeId: number) => {
+    setExpandedDetailNodeIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+
+      return next;
+    });
+  };
+
+  const handleExpandAllDetails = () => {
+    setExpandedDetailNodeIds(new Set(allNodeIds));
+  };
+
+  const handleCollapseAllDetails = () => {
+    setExpandedDetailNodeIds(new Set());
   };
 
   return (
@@ -121,6 +168,18 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
         <div className="tv-control-divider" />
 
         <div className="tv-control-group">
+          <button type="button" onClick={handleExpandAllDetails}>
+            Expand All Details
+          </button>
+
+          <button type="button" onClick={handleCollapseAllDetails}>
+            Collapse All Details
+          </button>
+        </div>
+
+        <div className="tv-control-divider" />
+
+        <div className="tv-control-group">
           <button type="button" onClick={handleZoomOut}>
             Zoom Out
           </button>
@@ -148,6 +207,9 @@ export default function TreeVisualizer({ data }: TreeVisualizerProps) {
           activeStep={activeStep}
           zoom={zoom}
           containerRef={containerRef}
+          expandedDetailNodeIds={expandedDetailNodeIds}
+          isAllDetailsExpanded={isAllDetailsExpanded}
+          onToggleNode={handleToggleNode}
         />
 
         <TraversalLogPanel

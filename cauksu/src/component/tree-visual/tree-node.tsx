@@ -3,100 +3,178 @@ import type { LayoutNode } from "./types";
 type TreeNodeProps = {
   node: LayoutNode;
   state: "default" | "visited" | "matched" | "active";
+  isExpanded: boolean;
+  onToggle: (nodeId: number) => void;
 };
 
-function getAttributeLines(attributes: Record<string, string>) {
-  const lines: string[] = [];
+function formatAttributeText(attributes: Record<string, string>) {
+  const entries = Object.entries(attributes);
 
-  if (attributes.id) {
-    lines.push(`#${attributes.id}`);
+  if (entries.length === 0) {
+    return "-";
   }
 
-  if (attributes.class) {
-    const classLine = attributes.class
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 3)
-      .map((className) => `.${className}`)
-      .join(" ");
+  return entries.map(([key, value]) => `${key}="${value}"`).join(", ");
+}
 
-    if (classLine) {
-      lines.push(classLine);
+function wrapText(text: string, maxLineLength = 22, maxLines = 2) {
+  if (text.length <= maxLineLength) {
+    return [text];
+  }
+
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+
+    if (nextLine.length <= maxLineLength) {
+      currentLine = nextLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+
+      if (lines.length === maxLines - 1) {
+        break;
+      }
     }
   }
 
-  const otherEntries = Object.entries(attributes).filter(
-    ([key]) => key !== "id" && key !== "class"
-  );
-
-  if (otherEntries.length > 0) {
-    lines.push(
-      otherEntries
-        .slice(0, 2)
-        .map(([key, value]) => `${key}=${value}`)
-        .join(" ")
-    );
+  if (lines.length < maxLines && currentLine) {
+    lines.push(currentLine);
   }
 
-  return lines.slice(0, 2);
-}
-
-function getTooltipText(node: LayoutNode) {
-  const entries = Object.entries(node.attributes);
-
-  if (entries.length === 0) {
-    return `Node ${node.id}\n<${node.tag}>`;
+  if (lines.length === 0) {
+    lines.push(text.slice(0, maxLineLength));
   }
 
-  return [
-    `Node ${node.id}`,
-    `<${node.tag}>`,
-    ...entries.map(([key, value]) => `${key}="${value}"`),
-  ].join("\n");
+  const usedText = lines.join(" ");
+  if (usedText.length < text.length) {
+    const lastIndex = lines.length - 1;
+    lines[lastIndex] = `${lines[lastIndex].slice(0, Math.max(lines[lastIndex].length - 3, 0))}...`;
+  }
+
+  return lines.slice(0, maxLines);
 }
 
-export default function TreeNode({ node, state }: TreeNodeProps) {
-  const attributeLines = getAttributeLines(node.attributes);
-  const tooltipText = getTooltipText(node);
+export default function TreeNode({
+  node,
+  state,
+  isExpanded,
+  onToggle,
+}: TreeNodeProps) {
+  const attributeText = formatAttributeText(node.attributes);
+  const attributeLines = wrapText(attributeText, 22, 2);
+
+  const rootLabelY = isExpanded ? -86 : -64;
+  const levelLabelY = isExpanded ? -68 : -48;
 
   return (
-    <g transform={`translate(${node.x}, ${node.y})`} className="tv-node-group">
-      <title>{tooltipText}</title>
+    <g
+      transform={`translate(${node.x}, ${node.y})`}
+      className="tv-node-group is-clickable"
+      onClick={() => onToggle(node.id)}
+    >
+      <title>
+        {`Node ${node.id}
+<${node.tag}>
+${attributeText}
+${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
+      </title>
 
       {node.depth === 0 && (
-        <text textAnchor="middle" y={-62} className="tv-node-root-label">
+        <text textAnchor="middle" y={rootLabelY} className="tv-node-root-label">
           ROOT
         </text>
       )}
 
-      <text
-        textAnchor="middle"
-        y={node.depth === 0 ? -46 : -54}
-        className="tv-node-level-label"
-      >
+      <text textAnchor="middle" y={levelLabelY} className="tv-node-level-label">
         Level {node.depth}
       </text>
 
-      <circle r={30} className={`tv-node tv-node--${state}`} />
+      {isExpanded ? (
+        <>
+          <rect
+            x={-122}
+            y={-50}
+            width={244}
+            height={126}
+            rx={16}
+            ry={16}
+            className={`tv-node-shape tv-node-shape--${state}`}
+          />
 
-      <text textAnchor="middle" dy="0.35em" className="tv-node-id">
-        {node.id}
-      </text>
+          <rect
+            x={92}
+            y={-40}
+            width={20}
+            height={20}
+            rx={6}
+            ry={6}
+            className="tv-node-badge"
+          />
+          <text x={102} y={-26} textAnchor="middle" className="tv-node-badge-symbol">
+            −
+          </text>
 
-      <text textAnchor="middle" y={50} className="tv-node-tag">
-        {node.tag}
-      </text>
+          <text x={-96} y={-16} className="tv-node-rect-label">
+            id
+          </text>
+          <text x={-10} y={-16} className="tv-node-rect-separator">
+            :
+          </text>
+          <text x={8} y={-16} className="tv-node-rect-value">
+            {node.id}
+          </text>
 
-      {attributeLines.map((line, index) => (
-        <text
-          key={`${node.id}-${index}`}
-          textAnchor="middle"
-          y={68 + index * 14}
-          className="tv-node-attr"
-        >
-          {line}
-        </text>
-      ))}
+          <text x={-96} y={8} className="tv-node-rect-label">
+            tag
+          </text>
+          <text x={-10} y={8} className="tv-node-rect-separator">
+            :
+          </text>
+          <text x={8} y={8} className="tv-node-rect-value">
+            {node.tag}
+          </text>
+
+          <text x={-96} y={32} className="tv-node-rect-label">
+            attribute
+          </text>
+          <text x={-10} y={32} className="tv-node-rect-separator">
+            :
+          </text>
+
+          {attributeLines.map((line, index) => (
+            <text
+              key={`${node.id}-attr-${index}`}
+              x={8}
+              y={32 + index * 15}
+              className="tv-node-rect-value tv-node-rect-value--small"
+            >
+              {line}
+            </text>
+          ))}
+        </>
+      ) : (
+        <>
+          <circle r={30} className={`tv-node-shape tv-node-shape--${state}`} />
+
+          <circle cx={20} cy={-20} r={10} className="tv-node-badge" />
+          <text x={20} y={-16} textAnchor="middle" className="tv-node-badge-symbol">
+            +
+          </text>
+
+          <text textAnchor="middle" dy="0.35em" className="tv-node-id">
+            {node.id}
+          </text>
+          <text textAnchor="middle" y={50} className="tv-node-tag">
+            {node.tag}
+          </text>
+        </>
+      )}
     </g>
   );
 }
