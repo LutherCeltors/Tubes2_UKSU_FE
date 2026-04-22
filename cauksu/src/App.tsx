@@ -1,30 +1,83 @@
-
-import './App.css'
-import { useState } from 'react'
+import "./App.css";
+import { useState } from "react";
 import TreeVisualizer from "./component/tree-visual/tree-visualizer";
 import type { DomTraversalResponse } from "./component/tree-visual/types";
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 type RequestData = {
-  mode: "url" | "html"
-  url?: string
-  html?: string
-  algorithm: "bfs" | "dfs"
-  selector: string
-  resultMode: "TOP" | "ALL"
-  topN?: number
+  mode: "url" | "html";
+  url?: string;
+  html?: string;
+  algorithm: "bfs" | "dfs";
+  selector: string;
+  resultMode: "TOP" | "ALL";
+  topN?: number;
+};
+
+type OptionCardProps<T extends string> = {
+  label: string;
+  value: T;
+  current: T;
+  onSelect: (value: T) => void;
+  description: string;
+};
+
+function OptionCard<T extends string>({
+  label,
+  value,
+  current,
+  onSelect,
+  description,
+}: OptionCardProps<T>) {
+  const selected = value === current;
+
+  return (
+    <button
+      type="button"
+      className={`option-card${selected ? " option-card--selected" : ""}`}
+      onClick={() => onSelect(value)}
+    >
+      <span className="option-card__radio" aria-hidden="true">
+        <span className={`option-card__dot${selected ? " option-card__dot--on" : ""}`} />
+      </span>
+
+      <span className="option-card__text">
+        <span className="option-card__label">{label}</span>
+        <span className="option-card__desc">{description}</span>
+      </span>
+    </button>
+  );
 }
 
+function SectionLabel({ children }: { children: string }) {
+  return <p className="section-label">{children}</p>;
+}
 
+function StatPill({
+  label,
+  value,
+  accent = "default",
+}: {
+  label: string;
+  value: string;
+  accent?: "default" | "algo-bfs" | "algo-dfs";
+}) {
+  return (
+    <div className={`app-stat-pill app-stat-pill--${accent}`}>
+      <span className="app-stat-pill__value">{value}</span>
+      <span className="app-stat-pill__label">{label}</span>
+    </div>
+  );
+}
 
 function App() {
-  const [mode, setMode] = useState<"URL" | "MANUAL">("URL")
-  const [url, setUrl] = useState("")
-  const [html, setHtml] = useState("")
-  const [algorithm, setAlgorithm] = useState<"bfs" | "dfs">("bfs")
-  const [selector, setSelector] = useState("")
-  const [resultMode, setResultMode] = useState<"TOP" | "ALL">("ALL")
-  const [topN, setTopN] = useState(10)
+  const [mode, setMode] = useState<"URL" | "MANUAL">("URL");
+  const [url, setUrl] = useState("");
+  const [html, setHtml] = useState("");
+  const [algorithm, setAlgorithm] = useState<"bfs" | "dfs">("bfs");
+  const [selector, setSelector] = useState("");
+  const [resultMode, setResultMode] = useState<"TOP" | "ALL">("ALL");
+  const [topN, setTopN] = useState(10);
 
   const [treeData, setTreeData] = useState<DomTraversalResponse | null>(null);
   const [visualizationKey, setVisualizationKey] = useState(0);
@@ -32,11 +85,11 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
 
-  const[isLeftMenuOpen, setLeftMenuOpen] = useState(true);
+  const [isLeftMenuOpen, setLeftMenuOpen] = useState(true);
   const currentData = treeData ?? (!hasAttemptedSearch ? sampleData : null);
 
   const handleSubmit = async () => {
-    const data : RequestData = {
+    const data: RequestData = {
       mode: mode === "URL" ? "url" : "html",
       url: mode === "URL" ? url : undefined,
       html: mode === "MANUAL" ? html : undefined,
@@ -44,13 +97,11 @@ function App() {
       selector,
       resultMode,
       topN: resultMode === "TOP" ? topN : undefined,
-    }
+    };
 
     setIsLoading(true);
     setErrorMessage("");
     setHasAttemptedSearch(true);
-
-    console.log("Payload ke backend:", data)
 
     try {
       const res = await fetch("http://localhost:8080/api/data", {
@@ -60,181 +111,176 @@ function App() {
         },
         body: JSON.stringify(data),
       });
+
       if (!res.ok) {
         throw new Error(`Request gagal dengan status ${res.status}`);
       }
 
       const result: DomTraversalResponse = await res.json();
-      console.log(result)
       setTreeData(result);
       setVisualizationKey((prev) => prev + 1);
-
-    }catch (error) {
+    } catch (error) {
       console.error(error);
-      setErrorMessage("Gagal mengambil data visualisasi.");
+      setErrorMessage("Failed to fetch data.");
       setTreeData(null);
-    }finally{
+    } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className='app-shell'>
+    <div className="app-shell">
       <header className="app-header">
-        <button className="app-menu-toggle" 
-          onClick={() => setLeftMenuOpen((prev) => !prev)}
-        >
-          {isLeftMenuOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
-        </button>
+        <div className="app-brand">
+          <button className="app-menu-toggle" onClick={() => setLeftMenuOpen((prev) => !prev)}>
+            {isLeftMenuOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+          </button>
 
-        <h1 className='text-white pl-8'>CAUKSU</h1>
+          <h1 className="app-logo">CAUKSU</h1>
+        </div>
 
+        {currentData && (
+          <div className="app-stats">
+            <StatPill label="execution" value={`${currentData.executionTimeMs.toFixed(2)} ms`} />
+            <StatPill label="nodes" value={`${currentData.nodesVisited} nodes`} />
+            <StatPill label="depth" value={`depth ${currentData.maxDepth}`} />
+            <StatPill
+              label="algorithm"
+              value={algorithm.toUpperCase()}
+              accent={algorithm === "bfs" ? "algo-bfs" : "algo-dfs"}
+            />
+          </div>
+        )}
       </header>
 
-      <div className='app-body'>
-        {/* Input field */}
+      <div className="app-body">
         <aside className={`app-sidebar ${isLeftMenuOpen ? "open" : "collapsed"}`}>
-          <div className="flex flex-col flex-1 bg-gray-200 gap-3 p-2">
+          <div className="input-panel">
+            <SectionLabel>Input Mode</SectionLabel>
+            <div className="option-group">
+              <OptionCard
+                label="URL"
+                value="URL"
+                current={mode}
+                onSelect={setMode}
+                description="Fetch from web"
+              />
+              <OptionCard
+                label="HTML"
+                value="MANUAL"
+                current={mode}
+                onSelect={setMode}
+                description="Paste markup"
+              />
+            </div>
 
-            {/* MODE */}
-            <button
-              onClick={() => setMode(mode === "URL" ? "MANUAL" : "URL")}
-              className="bg-blue-500 text-white p-2 rounded"
-              >
-              Mode: {mode}
-            </button>
+            <div className="field-wrap">
+              {mode === "URL" ? (
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="text-input"
+                />
+              ) : (
+                <textarea
+                  value={html}
+                  onChange={(e) => setHtml(e.target.value)}
+                  placeholder="<html>...</html>"
+                  className="text-input text-input--area"
+                />
+              )}
+            </div>
 
-            {/* URL / HTML */}
-            {mode === "URL" ? (
+            <SectionLabel>Algorithm</SectionLabel>
+            <div className="option-group">
+              <OptionCard
+                label="BFS"
+                value="bfs"
+                current={algorithm}
+                onSelect={setAlgorithm}
+                description="Level-by-level"
+              />
+              <OptionCard
+                label="DFS"
+                value="dfs"
+                current={algorithm}
+                onSelect={setAlgorithm}
+                description="Depth-first"
+              />
+            </div>
+
+            <SectionLabel>CSS Selector</SectionLabel>
+            <div className="field-wrap">
               <input
                 type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://entahapalah.com"
-                className="p-2 border rounded"
+                value={selector}
+                onChange={(e) => setSelector(e.target.value)}
+                placeholder="div, .class, #id, p > span"
+                className="text-input"
               />
-            ) : (
-              <textarea
-                value={html}
-                onChange={(e) => setHtml(e.target.value)}
-                placeholder="<h1>Enter HTML<h1>"
-                className="p-2 border rounded h-32"
+            </div>
+
+            <SectionLabel>Result Mode</SectionLabel>
+            <div className="option-group">
+              <OptionCard
+                label="All"
+                value="ALL"
+                current={resultMode}
+                onSelect={setResultMode}
+                description="Every match"
               />
-            )}
+              <OptionCard
+                label="Top N"
+                value="TOP"
+                current={resultMode}
+                onSelect={setResultMode}
+                description="First N results"
+              />
+            </div>
 
-            {/* ALGORITHM */}
-            <select
-              value={algorithm}
-              onChange={(e) => setAlgorithm(e.target.value as "bfs" | "dfs")}
-              className="p-2 border rounded"
-            >
-              <option value="bfs">BFS</option>
-              <option value="dfs">DFS</option>
-            </select>
-
-            {/* CSS SELECTOR */}
-            <input
-              type="text"
-              value={selector}
-              onChange={(e) => setSelector(e.target.value)}
-              placeholder=".box, #header, div > p"
-              className="p-2 border rounded"
-            />
-
-            {/* RESULT MODE */}
-            <select
-              value={resultMode}
-              onChange={(e) => setResultMode(e.target.value as "TOP" | "ALL")}
-              className="p-2 border rounded"
-            >
-              <option value="ALL">All</option>
-              <option value="TOP">Top N</option>
-            </select>
-
-            {/* TOP N */}
             {resultMode === "TOP" && (
-              <input
-                type="number"
-                value={topN}
-                onChange={(e) => setTopN(Number(e.target.value))}
-                className="p-2 border rounded"
-              />
-            )}
-
-            {/* SUBMIT */}
-            <button
-              onClick={handleSubmit}
-              className="bg-green-500 text-white p-2 rounded mt-2"
-            >
-              {isLoading ? "Searching..." : "Search"}
-            </button>
-
-            {errorMessage && (
-              <div className = "app-error-box">
-                {errorMessage}
+              <div className="field-wrap">
+                <input
+                  type="number"
+                  min={1}
+                  value={topN}
+                  onChange={(e) => setTopN(Math.max(1, Number(e.target.value)))}
+                  className="text-input"
+                />
               </div>
             )}
 
-            {currentData ? (
-              <section className="app-result-summary">
-                <div className="app-result-summary-header">
-                  <h2>Result Summary</h2>
-                </div>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className={`go-button${isLoading ? " go-button--loading" : ""}`}
+              disabled={isLoading}
+            >
+              {isLoading ? <span className="go-button__spinner" /> : "Go"}
+            </button>
 
-                <div className="app-summary-grid">
-                  <div className="app-summary-card">
-                    <span className="app-summary-label">Execution Time</span>
-                    <strong>{currentData.executionTimeMs} ms</strong>
-                  </div>
-
-                  <div className="app-summary-card">
-                    <span className="app-summary-label">Nodes Visited</span>
-                    <strong>{currentData.nodesVisited}</strong>
-                  </div>
-
-                  <div className="app-summary-card">
-                    <span className="app-summary-label">Max Depth</span>
-                    <strong>{currentData.maxDepth}</strong>
-                  </div>
-                </div>
-              </section>
-            ) : (
-              <section className="app-result-summary">
-                <div className="app-result-summary-header">
-                  <h2>Result Summary</h2>
-                </div>
-
-                <div className="app-empty-state-card">
-                  No visualization data is available right now. Fix the request or backend
-                  connection, then try searching again.
-                </div>
-              </section>
-            )}
-
+            {errorMessage && <div className="app-error-box">{errorMessage}</div>}
           </div>
         </aside>
 
-        {/* Output field */}
-        <div className='app-main'>
-              {currentData ? (
-                <TreeVisualizer key={visualizationKey} data ={currentData}/>
-              ) : (
-                <div className="app-main-empty-state">
-                  <div className="app-main-empty-card">
-                    <h2>Visualization unavailable</h2>
-                    <p>
-                      The latest request did not return tree data, so the canvas is hidden
-                      instead of showing sample content.
-                    </p>
-                  </div>
-                </div>
-              )}
-        </div>
+        <main className="app-main">
+          {currentData ? (
+            <TreeVisualizer key={visualizationKey} data={currentData} />
+          ) : (
+            <div className="app-main-empty-state">
+              <div className="app-main-empty-copy">
+                <span>Configure inputs and press</span> <strong>Go</strong>
+                <span>to visualise traversal</span>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
-  )
+  );
 }
-
 
 const sampleData: DomTraversalResponse = {
   executionTimeMs: 2.5,
@@ -293,4 +339,4 @@ const sampleData: DomTraversalResponse = {
   ],
 };
 
-export default App
+export default App;

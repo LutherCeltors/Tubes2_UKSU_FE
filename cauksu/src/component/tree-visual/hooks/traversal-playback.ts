@@ -5,7 +5,7 @@ export function useTraversalPlayback(
   currentStep: number,
   maxStep: number,
   onStepChange: (nextStep: number) => void,
-  intervalMs = 700
+  intervalMs = 300
 ) {
   useEffect(() => {
     if (!isPlaying) return;

@@ -1,4 +1,4 @@
-import { useMemo, type RefObject } from "react";
+import { memo, useMemo, type RefObject } from "react";
 import type { TraversalLogItem, TreeLayoutResult } from "./types";
 import { getTraversalState } from "./utils/tree-traversal-state";
 import TreeEdge from "./tree-edge";
@@ -8,10 +8,8 @@ type TreeSvgProps = {
   layout: TreeLayoutResult;
   traversalLog: TraversalLogItem[];
   activeStep: number;
+  contentRef: RefObject<SVGGElement | null>;
   stageRef: RefObject<HTMLDivElement | null>;
-  cameraX: number;
-  cameraY: number;
-  zoom: number;
   expandedDetailNodeIds: Set<number>;
   isAllDetailsExpanded: boolean;
   onToggleNode: (nodeId: number) => void;
@@ -20,14 +18,12 @@ type TreeSvgProps = {
   onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
 };
 
-export default function TreeSvg({
+function TreeSvg({
   layout,
   traversalLog,
   activeStep,
+  contentRef,
   stageRef,
-  cameraX,
-  cameraY,
-  zoom,
   expandedDetailNodeIds,
   isAllDetailsExpanded,
   onToggleNode,
@@ -67,7 +63,7 @@ export default function TreeSvg({
       onWheel={onCanvasWheel}
     >
       <svg className="tv-svg" width="100%" height="100%">
-        <g transform={`translate(${cameraX} ${cameraY}) scale(${zoom})`}>
+        <g ref={contentRef}>
           {layout.edges.map((edge) => {
             let edgeState: "default" | "visited" | "active" = "default";
 
@@ -106,3 +102,5 @@ export default function TreeSvg({
     </div>
   );
 }
+
+export default memo(TreeSvg);

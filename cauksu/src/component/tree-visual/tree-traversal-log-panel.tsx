@@ -25,7 +25,7 @@ export default function TraversalLogPanel({
     activeItem.scrollIntoView({
       block: "nearest",
       inline: "nearest",
-      behavior: "smooth",
+      behavior: "auto",
     });
   }, [activeStep]);
 

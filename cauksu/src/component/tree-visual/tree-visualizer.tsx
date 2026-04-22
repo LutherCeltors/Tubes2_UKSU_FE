@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { DomTraversalResponse, DomTreeNode } from "./types";
 import TreeSvg from "./tree-svg";
 import TraversalLogPanel from "./tree-traversal-log-panel";
@@ -7,6 +7,12 @@ import { useDraggablePanel } from "./hooks/dragable-panel";
 import { useCanvasPan } from "./hooks/canvas-pan";
 import { buildTreeLayout, type TreeLayoutMode } from "./utils/tree-layout-builder";
 import "./tree-visual.css";
+
+type ViewportState = {
+  x: number;
+  y: number;
+  zoom: number;
+};
 
 function clampZoom(value: number) {
   return Math.min(Math.max(value, 0.01), 3);
@@ -24,7 +30,6 @@ function collectAllNodeIds(root: DomTreeNode) {
   return ids;
 }
 
-
 export default function TreeVisualizer({ data }: { data: DomTraversalResponse }) {
   const maxStep = data.traversalLog.length - 1;
   const allNodeIds = useMemo(() => collectAllNodeIds(data.tree), [data.tree]);
@@ -33,9 +38,6 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     data.traversalLog.length > 0 ? 0 : -1
   );
   const [isPlaying, setIsPlaying] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [cameraX, setCameraX] = useState(0);
-  const [cameraY, setCameraY] = useState(0);
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const [expandedDetailNodeIds, setExpandedDetailNodeIds] = useState<Set<number>>(
     () => new Set()
@@ -50,11 +52,41 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
   );
 
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const zoomRef = useRef(zoom);
+  const contentRef = useRef<SVGGElement | null>(null);
+  const zoomLabelRef = useRef<HTMLSpanElement | null>(null);
+  const viewportRef = useRef<ViewportState>({ x: 0, y: 0, zoom: 1 });
+  const panFrameRef = useRef<number | null>(null);
+  const pendingPanViewportRef = useRef<ViewportState | null>(null);
 
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
+  const applyViewport = useCallback((nextViewport: ViewportState) => {
+    viewportRef.current = nextViewport;
+
+    if (contentRef.current) {
+      contentRef.current.setAttribute(
+        "transform",
+        `translate(${nextViewport.x} ${nextViewport.y}) scale(${nextViewport.zoom})`
+      );
+    }
+
+    if (zoomLabelRef.current) {
+      zoomLabelRef.current.textContent = `${Math.round(nextViewport.zoom * 100)}%`;
+    }
+  }, []);
+
+  const schedulePanViewport = useCallback((nextViewport: ViewportState) => {
+    pendingPanViewportRef.current = nextViewport;
+
+    if (panFrameRef.current !== null) return;
+
+    panFrameRef.current = window.requestAnimationFrame(() => {
+      panFrameRef.current = null;
+
+      if (!pendingPanViewportRef.current) return;
+
+      applyViewport(pendingPanViewportRef.current);
+      pendingPanViewportRef.current = null;
+    });
+  }, [applyViewport]);
 
   const {
     panelRef,
@@ -62,7 +94,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     isDragging: isDraggingLog,
     setPosition,
     handlePointerDown: handleLogPointerDown,
-  } = useDraggablePanel(stageRef, { x: 800, y: 16 });
+  } = useDraggablePanel(stageRef, { x: 16, y: 16 });
 
   useLayoutEffect(() => {
     const stage = stageRef.current;
@@ -80,11 +112,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     });
   }, [layout.width, layout.height, setPosition, panelRef]);
 
-  const {
-    isPanning,
-    startPan,
-    getNextCameraPosition,
-  } = useCanvasPan();
+  const { isPanning, startPan, getNextCameraPosition } = useCanvasPan();
 
   useLayoutEffect(() => {
     const stage = stageRef.current;
@@ -92,14 +120,17 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
 
     const stageWidth = stage.clientWidth;
     const stageHeight = stage.clientHeight;
-    const currentZoom = zoomRef.current;
+    const currentZoom = viewportRef.current.zoom;
 
     const centeredX = (stageWidth - layout.width * currentZoom) / 2;
     const centeredY = (stageHeight - layout.height * currentZoom) / 2;
 
-    setCameraX(centeredX);
-    setCameraY(centeredY);
-  }, [layout.width, layout.height, data]);
+    applyViewport({
+      x: centeredX,
+      y: centeredY,
+      zoom: currentZoom,
+    });
+  }, [applyViewport, layout.width, layout.height, data]);
 
   useTraversalPlayback(isPlaying, activeStep, maxStep, (nextStep) => {
     if (nextStep >= maxStep) {
@@ -110,30 +141,36 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     setActiveStep(nextStep);
   });
 
-  const handleBackgroundPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    startPan(event, cameraX, cameraY);
-  };
+  const handleBackgroundPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    startPan(event, viewportRef.current.x, viewportRef.current.y);
+  }, [startPan]);
 
-  const handleBackgroundPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleBackgroundPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (!isPanning) return;
 
     const next = getNextCameraPosition(event.clientX, event.clientY);
-    setCameraX(next.x);
-    setCameraY(next.y);
-  };
+    schedulePanViewport({
+      x: next.x,
+      y: next.y,
+      zoom: viewportRef.current.zoom,
+    });
+  }, [getNextCameraPosition, isPanning, schedulePanViewport]);
 
-  function zoomAroundPoint(nextZoom: number, anchorX: number, anchorY: number) {
-    if (nextZoom === zoom) return;
+  const zoomAroundPoint = useCallback((nextZoom: number, anchorX: number, anchorY: number) => {
+    const currentViewport = viewportRef.current;
+    if (nextZoom === currentViewport.zoom) return;
 
-    const worldX = (anchorX - cameraX) / zoom;
-    const worldY = (anchorY - cameraY) / zoom;
+    const worldX = (anchorX - currentViewport.x) / currentViewport.zoom;
+    const worldY = (anchorY - currentViewport.y) / currentViewport.zoom;
 
-    setZoom(nextZoom);
-    setCameraX(anchorX - worldX * nextZoom);
-    setCameraY(anchorY - worldY * nextZoom);
-  }
+    applyViewport({
+      x: anchorX - worldX * nextZoom,
+      y: anchorY - worldY * nextZoom,
+      zoom: nextZoom,
+    });
+  }, [applyViewport]);
 
-  function zoomAroundViewportCenter(nextZoom: number) {
+  const zoomAroundViewportCenter = useCallback((nextZoom: number) => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -141,23 +178,23 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     const viewportCenterY = stage.clientHeight / 2;
 
     zoomAroundPoint(nextZoom, viewportCenterX, viewportCenterY);
-  }
+  }, [zoomAroundPoint]);
 
-  const handleZoomIn = () => {
-    const nextZoom =  clampZoom(zoom + 0.1);
+  const handleZoomIn = useCallback(() => {
+    const nextZoom = clampZoom(viewportRef.current.zoom + 0.1);
     zoomAroundViewportCenter(nextZoom);
-  };
+  }, [zoomAroundViewportCenter]);
 
-  const handleZoomOut = () => {
-    const nextZoom =  clampZoom(zoom - 0.1);
+  const handleZoomOut = useCallback(() => {
+    const nextZoom = clampZoom(viewportRef.current.zoom - 0.1);
     zoomAroundViewportCenter(nextZoom);
-  };
+  }, [zoomAroundViewportCenter]);
 
-  const handleResetZoom = () => {
+  const handleResetZoom = useCallback(() => {
     zoomAroundViewportCenter(1);
-  };
+  }, [zoomAroundViewportCenter]);
 
-  const handleFitToScreen = () => {
+  const handleFitToScreen = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -168,16 +205,17 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     const scaleY = availableHeight / layout.height;
     const nextZoom = clampZoom(Math.min(scaleX, scaleY));
 
-    setZoom(nextZoom);
-
     const centeredX = (stage.clientWidth - layout.width * nextZoom) / 2;
     const centeredY = (stage.clientHeight - layout.height * nextZoom) / 2;
 
-    setCameraX(centeredX);
-    setCameraY(centeredY);
-  };
+    applyViewport({
+      x: centeredX,
+      y: centeredY,
+      zoom: nextZoom,
+    });
+  }, [applyViewport, layout.height, layout.width]);
 
-  const handleCanvasWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+  const handleCanvasWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
     if (!event.ctrlKey) return;
 
     event.preventDefault();
@@ -188,27 +226,27 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     const rect = stage.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const nextZoom = clampZoom(zoom * Math.exp(-event.deltaY * 0.01));
+    const nextZoom = clampZoom(viewportRef.current.zoom * Math.exp(-event.deltaY * 0.01));
 
     zoomAroundPoint(nextZoom, pointerX, pointerY);
-  };
+  }, [zoomAroundPoint]);
 
-  const handleToggleNode = (nodeId: number) => {
+  const handleToggleNode = useCallback((nodeId: number) => {
     setExpandedDetailNodeIds((prev) => {
       const next = new Set(prev);
       if (next.has(nodeId)) next.delete(nodeId);
       else next.add(nodeId);
       return next;
     });
-  };
+  }, []);
 
-  const handleExpandAllDetails = () => {
+  const handleExpandAllDetails = useCallback(() => {
     setExpandedDetailNodeIds(new Set(allNodeIds));
-  };
+  }, [allNodeIds]);
 
-  const handleCollapseAllDetails = () => {
+  const handleCollapseAllDetails = useCallback(() => {
     setExpandedDetailNodeIds(new Set());
-  };
+  }, []);
 
   return (
     <section className="tv-root">
@@ -269,7 +307,9 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
             Zoom Out
           </button>
 
-          <span className="tv-zoom-label">{Math.round(zoom * 100)}%</span>
+          <span ref={zoomLabelRef} className="tv-zoom-label">
+            100%
+          </span>
 
           <button type="button" onClick={handleZoomIn}>
             Zoom In
@@ -290,10 +330,8 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
           layout={layout}
           traversalLog={data.traversalLog}
           activeStep={activeStep}
+          contentRef={contentRef}
           stageRef={stageRef}
-          cameraX={cameraX}
-          cameraY={cameraY}
-          zoom={zoom}
           expandedDetailNodeIds={expandedDetailNodeIds}
           isAllDetailsExpanded={isAllDetailsExpanded}
           onToggleNode={handleToggleNode}
@@ -310,10 +348,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
             top: `${logPosition.y}px`,
           }}
         >
-          <div
-            className="tv-floating-log-handle"
-            onPointerDown={handleLogPointerDown}
-          >
+          <div className="tv-floating-log-handle" onPointerDown={handleLogPointerDown}>
             <span>Traversal Log</span>
 
             <div className="tv-floating-log-actions">
@@ -327,7 +362,6 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
               >
                 {isLogCollapsed ? "Open" : "Collapse"}
               </button>
-
             </div>
           </div>
 
