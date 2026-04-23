@@ -9,6 +9,7 @@ type RequestData = {
   url?: string;
   html?: string;
   algorithm: "bfs" | "dfs";
+  threading: "single" | "multi";
   selector: string;
   resultMode: "TOP" | "ALL";
   topN?: number;
@@ -75,6 +76,7 @@ function App() {
   const [url, setUrl] = useState("");
   const [html, setHtml] = useState("");
   const [algorithm, setAlgorithm] = useState<"bfs" | "dfs">("bfs");
+  const [threading, setThreading] = useState<"single" | "multi">("multi");
   const [selector, setSelector] = useState("");
   const [resultMode, setResultMode] = useState<"TOP" | "ALL">("ALL");
   const [topN, setTopN] = useState(10);
@@ -83,10 +85,9 @@ function App() {
   const [visualizationKey, setVisualizationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
 
   const [isLeftMenuOpen, setLeftMenuOpen] = useState(true);
-  const currentData = treeData ?? (!hasAttemptedSearch ? sampleData : null);
+  const currentData = treeData;
 
   const handleSubmit = async () => {
     const data: RequestData = {
@@ -94,6 +95,7 @@ function App() {
       url: mode === "URL" ? url : undefined,
       html: mode === "MANUAL" ? html : undefined,
       algorithm,
+      threading,
       selector,
       resultMode,
       topN: resultMode === "TOP" ? topN : undefined,
@@ -101,7 +103,6 @@ function App() {
 
     setIsLoading(true);
     setErrorMessage("");
-    setHasAttemptedSearch(true);
 
     try {
       const res = await fetch("/api/data", {
@@ -211,6 +212,24 @@ function App() {
               />
             </div>
 
+            <SectionLabel>Threading</SectionLabel>
+            <div className="option-group">
+              <OptionCard
+                label="Single"
+                value="single"
+                current={threading}
+                onSelect={setThreading}
+                description="Sequential"
+              />
+              <OptionCard
+                label="Multi"
+                value="multi"
+                current={threading}
+                onSelect={setThreading}
+                description="Parallel"
+              />
+            </div>
+
             <SectionLabel>CSS Selector</SectionLabel>
             <div className="field-wrap">
               <input
@@ -282,61 +301,5 @@ function App() {
   );
 }
 
-const sampleData: DomTraversalResponse = {
-  executionTimeMs: 2.5,
-  nodesVisited: 15,
-  maxDepth: 4,
-  tree: {
-    id: 1,
-    tag: "html",
-    attributes: {},
-    children: [
-      {
-        id: 2,
-        tag: "body",
-        attributes: { class: "container" },
-        children: [
-          {
-            id: 5,
-            tag: "div",
-            attributes: { id: "hero" },
-            children: [
-              {
-                id: 8,
-                tag: "h1",
-                attributes: {},
-                children: [],
-              },
-              {
-                id: 9,
-                tag: "p",
-                attributes: {},
-                children: [],
-              },
-            ],
-          },
-          {
-            id: 6,
-            tag: "section",
-            attributes: {},
-            children: [
-              {
-                id: 10,
-                tag: "button",
-                attributes: {},
-                children: [],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  traversalLog: [
-    { nodeId: 1, tag: "html", status: "visited" },
-    { nodeId: 2, tag: "body", status: "visited" },
-    { nodeId: 5, tag: "div", status: "matched" },
-  ],
-};
 
 export default App;

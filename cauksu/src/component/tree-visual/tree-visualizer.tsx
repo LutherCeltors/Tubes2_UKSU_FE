@@ -6,6 +6,7 @@ import { useTraversalPlayback } from "./hooks/traversal-playback";
 import { useDraggablePanel } from "./hooks/dragable-panel";
 import { useCanvasPan } from "./hooks/canvas-pan";
 import { buildTreeLayout, type TreeLayoutMode } from "./utils/tree-layout-builder";
+import { buildSortedBatches } from "./utils/tree-traversal-state";
 import "./tree-visual.css";
 
 type ViewportState = {
@@ -31,7 +32,8 @@ function collectAllNodeIds(root: DomTreeNode) {
 }
 
 export default function TreeVisualizer({ data }: { data: DomTraversalResponse }) {
-  const maxStep = data.traversalLog.length - 1;
+  const sortedBatches = useMemo(() => buildSortedBatches(data.traversalLog), [data.traversalLog]);
+  const maxStep = sortedBatches.length - 1;
   const allNodeIds = useMemo(() => collectAllNodeIds(data.tree), [data.tree]);
 
   const [activeStep, setActiveStep] = useState(() =>
@@ -302,7 +304,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
           />
 
           <span>
-            Step {maxStep >= 0 ? activeStep + 1 : 0} / {Math.max(data.traversalLog.length, 0)}
+            Step {maxStep >= 0 ? activeStep + 1 : 0} / {Math.max(sortedBatches.length, 0)}
           </span>
         </div>
 
@@ -348,6 +350,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
           layout={layout}
           traversalLog={data.traversalLog}
           activeStep={activeStep}
+          sortedBatches={sortedBatches}
           contentRef={contentRef}
           stageRef={stageRef}
           expandedDetailNodeIds={expandedDetailNodeIds}
