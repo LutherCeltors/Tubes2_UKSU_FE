@@ -15,7 +15,6 @@ type TreeSvgProps = {
   onToggleNode: (nodeId: number) => void;
   onBackgroundPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
   onBackgroundPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onCanvasWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
 };
 
 function TreeSvg({
@@ -29,7 +28,6 @@ function TreeSvg({
   onToggleNode,
   onBackgroundPointerDown,
   onBackgroundPointerMove,
-  onCanvasWheel,
 }: TreeSvgProps) {
   const traversalState = useMemo(
     () => getTraversalState(traversalLog, activeStep),
@@ -60,7 +58,6 @@ function TreeSvg({
       className="tv-canvas-wrapper"
       onPointerDown={onBackgroundPointerDown}
       onPointerMove={onBackgroundPointerMove}
-      onWheel={onCanvasWheel}
     >
       <svg className="tv-svg" width="100%" height="100%">
         <g ref={contentRef}>

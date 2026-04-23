@@ -215,10 +215,13 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     });
   }, [applyViewport, layout.height, layout.width]);
 
-  const handleCanvasWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+  const handleCanvasWheel = useCallback((event: WheelEvent | React.WheelEvent<HTMLDivElement>) => {
     if (!event.ctrlKey) return;
 
     event.preventDefault();
+    if ("stopPropagation" in event) {
+      event.stopPropagation();
+    }
 
     const stage = stageRef.current;
     if (!stage) return;
@@ -230,6 +233,21 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
 
     zoomAroundPoint(nextZoom, pointerX, pointerY);
   }, [zoomAroundPoint]);
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const handleNativeWheel = (event: WheelEvent) => {
+      handleCanvasWheel(event);
+    };
+
+    stage.addEventListener("wheel", handleNativeWheel, { passive: false });
+
+    return () => {
+      stage.removeEventListener("wheel", handleNativeWheel);
+    };
+  }, [handleCanvasWheel]);
 
   const handleToggleNode = useCallback((nodeId: number) => {
     setExpandedDetailNodeIds((prev) => {
@@ -337,7 +355,6 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
           onToggleNode={handleToggleNode}
           onBackgroundPointerDown={handleBackgroundPointerDown}
           onBackgroundPointerMove={handleBackgroundPointerMove}
-          onCanvasWheel={handleCanvasWheel}
         />
 
         <div
