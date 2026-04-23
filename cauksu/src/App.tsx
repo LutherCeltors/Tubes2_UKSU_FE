@@ -104,7 +104,7 @@ function App() {
     setHasAttemptedSearch(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/data", {
+      const res = await fetch("/api/data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
