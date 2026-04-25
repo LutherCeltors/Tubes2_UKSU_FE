@@ -3,6 +3,7 @@ export type TraversalStatus = "visited" | "matched" | "skipped";
 export interface DomTreeNode {
   id: number;
   tag: string;
+  text?: string;
   attributes?: Record<string, string>;
   children?: DomTreeNode[];
 }
@@ -25,6 +26,7 @@ export interface DomTraversalResponse {
 export interface LayoutNode {
   id: number;
   tag: string;
+  text?: string;
   attributes: Record<string, string>;
   depth: number;
   x: number;

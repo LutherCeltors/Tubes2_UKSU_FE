@@ -16,6 +16,7 @@ const EXPANDED_RECT_HALF_WIDTH = 122;
 type DraftNode = {
   id: number;
   tag: string;
+  text?: string;
   attributes: Record<string, string>;
   depth: number;
   rawX: number;
@@ -56,6 +57,7 @@ function buildBalancedTreeLayout(root: DomTreeNode): TreeLayoutResult {
     draftNodes.push({
       id: node.id,
       tag: node.tag,
+      text: node.text,
       attributes: node.attributes ?? {},
       depth,
       rawX,
@@ -85,6 +87,7 @@ function buildIndentedLayout(root: DomTreeNode): TreeLayoutResult {
     draftNodes.push({
       id: node.id,
       tag: node.tag,
+      text: node.text,
       attributes: node.attributes ?? {},
       depth,
       rawX: depth * INDENT_GAP_X + EXPANDED_RECT_HALF_WIDTH,
@@ -119,6 +122,7 @@ function finalizeLayout(
   const nodes: LayoutNode[] = draftNodes.map((node) => ({
     id: node.id,
     tag: node.tag,
+    text: node.text,
     attributes: node.attributes,
     depth: node.depth,
     x: node.rawX + paddingX,

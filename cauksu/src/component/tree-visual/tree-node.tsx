@@ -115,14 +115,19 @@ export default function TreeNode({
   isExpanded,
   onToggle,
 }: TreeNodeProps) {
+  const isTextNode = node.tag === "#text";
+  const textContent = node.text ?? "";
   const attributeText = formatAttributeText(node.attributes);
+
+  const bottomRowLabel = isTextNode ? "text" : "attribute";
+  const bottomRowValue = isTextNode ? (textContent || "-") : attributeText;
 
   const rootLabelY = isExpanded ? -94 : -64;
   const levelLabelY = isExpanded ? -68 : -48;
 
   const idLines = wrapText(String(node.id), 18, 2);
   const tagLines = wrapText(node.tag, 18, 2);
-  const attributeLines = wrapText(attributeText, 22, 3);
+  const bottomRowLines = wrapText(bottomRowValue, 22, 3);
 
   return (
     <motion.g
@@ -135,7 +140,7 @@ export default function TreeNode({
       <title>
         {`Node ${node.id}
         <${node.tag}>
-        ${attributeText}
+        ${bottomRowLabel}: ${bottomRowValue}
         ${isExpanded ? "Click to collapse detail" : "Click to expand detail"}`}
       </title>
 
@@ -203,12 +208,12 @@ export default function TreeNode({
             {renderMultilineText(RECT_CONTENT.valueX, 10, tagLines, "tv-node-rect-value")}
 
             <text x={RECT_CONTENT.labelX} y={48} className="tv-node-rect-label">
-              attribute
+              {bottomRowLabel}
             </text>
             <text x={RECT_CONTENT.separatorX} y={48} className="tv-node-rect-separator">
               :
             </text>
-            {renderMultilineText(RECT_CONTENT.valueX, 46, attributeLines, "tv-node-rect-value")}
+            {renderMultilineText(RECT_CONTENT.valueX, 46, bottomRowLines, "tv-node-rect-value")}
           </motion.g>
         ) : (
           <motion.g
