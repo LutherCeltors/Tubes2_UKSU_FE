@@ -231,7 +231,7 @@ export default function TreeVisualizer({ data }: { data: DomTraversalResponse })
     const rect = stage.getBoundingClientRect();
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;
-    const nextZoom = clampZoom(viewportRef.current.zoom * Math.exp(-event.deltaY * 0.01));
+    const nextZoom = clampZoom(viewportRef.current.zoom * Math.exp(-event.deltaY * 0.0001));
 
     zoomAroundPoint(nextZoom, pointerX, pointerY);
   }, [zoomAroundPoint]);
