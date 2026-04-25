@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { TraversalLogItem } from "./types";
+import { buildSortedBatches } from "./utils/tree-traversal-state";
 
 type TraversalLogPanelProps = {
   log: TraversalLogItem[];
@@ -16,40 +17,33 @@ export default function TraversalLogPanel({
 }: TraversalLogPanelProps) {
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
+  const sortedBatches = useMemo(() => buildSortedBatches(log), [log]);
+  const batchToStep = useMemo(
+    () => new Map(sortedBatches.map((b, i) => [b, i])),
+    [sortedBatches]
+  );
+
+  const activeBatchValue = activeStep >= 0 ? sortedBatches[activeStep] : -1;
+
   useEffect(() => {
     if (activeStep < 0) return;
-
-    const activeItem = itemRefs.current[activeStep];
+    const firstActiveIndex = log.findIndex((item) => item.batch === activeBatchValue);
+    if (firstActiveIndex < 0) return;
+    const activeItem = itemRefs.current[firstActiveIndex];
     if (!activeItem) return;
+    activeItem.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+  }, [activeStep, activeBatchValue, log]);
 
-    activeItem.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-      behavior: "auto",
-    });
-  }, [activeStep]);
+  function getLogItemState(item: TraversalLogItem) {
+    const itemStep = batchToStep.get(item.batch) ?? 0;
 
-  function getLogItemState(item: TraversalLogItem, index: number) {
-    if (index === activeStep) {
-      if (item.status === "matched") {
-        return "matched";
-      }
-      return "active";
+    if (item.batch === activeBatchValue) {
+      return item.status === "matched" ? "matched" : "active";
     }
 
-    if (index > activeStep) {
-      return "default";
-    }
+    if (itemStep > activeStep) return "default";
 
-    if (item.status === "visited") {
-      return "visited";
-    }
-
-    if (item.status === "matched") {
-      return "matched";
-    }
-
-    return "default";
+    return item.status === "matched" ? "matched" : "visited";
   }
 
   return (
@@ -58,7 +52,8 @@ export default function TraversalLogPanel({
 
       <div className="tv-log-list">
         {log.map((item, index) => {
-          const state = getLogItemState(item, index);
+          const state = getLogItemState(item);
+          const batchStep = batchToStep.get(item.batch) ?? 0;
 
           return (
             <button
@@ -68,7 +63,7 @@ export default function TraversalLogPanel({
                 itemRefs.current[index] = element;
               }}
               className={`tv-log-item tv-log-item--${state}`}
-              onClick={() => onSelectStep(index)}
+              onClick={() => onSelectStep(batchStep)}
             >
               <span>#{index + 1}</span>
               <span>Node {item.nodeId}</span>

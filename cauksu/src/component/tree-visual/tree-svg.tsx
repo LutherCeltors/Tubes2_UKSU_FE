@@ -8,6 +8,7 @@ type TreeSvgProps = {
   layout: TreeLayoutResult;
   traversalLog: TraversalLogItem[];
   activeStep: number;
+  sortedBatches: number[];
   contentRef: RefObject<SVGGElement | null>;
   stageRef: RefObject<HTMLDivElement | null>;
   expandedDetailNodeIds: Set<number>;
@@ -21,6 +22,7 @@ function TreeSvg({
   layout,
   traversalLog,
   activeStep,
+  sortedBatches,
   contentRef,
   stageRef,
   expandedDetailNodeIds,
@@ -30,8 +32,8 @@ function TreeSvg({
   onBackgroundPointerMove,
 }: TreeSvgProps) {
   const traversalState = useMemo(
-    () => getTraversalState(traversalLog, activeStep),
-    [traversalLog, activeStep]
+    () => getTraversalState(traversalLog, activeStep, sortedBatches),
+    [traversalLog, activeStep, sortedBatches]
   );
 
   const nodeStateMap = useMemo(() => {
@@ -41,7 +43,7 @@ function TreeSvg({
       let state: "default" | "visited" | "matched" | "active" = "default";
 
       if (traversalState.visitedNodeIds.has(node.id)) state = "visited";
-      if (traversalState.currentNodeId === node.id) state = "active";
+      if (traversalState.currentNodeIds.has(node.id)) state = "active";
       if (traversalState.matchedNodeIds.has(node.id)) state = "matched";
 
       map.set(node.id, state);
@@ -68,7 +70,7 @@ function TreeSvg({
               edgeState = "visited";
             }
 
-            if (traversalState.currentNodeId === edge.to) {
+            if (traversalState.currentNodeIds.has(edge.to)) {
               edgeState = "active";
             }
 

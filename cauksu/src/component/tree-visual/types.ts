@@ -11,6 +11,7 @@ export interface TraversalLogItem {
   nodeId: number;
   tag: string;
   status: TraversalStatus;
+  batch: number;
 }
 
 export interface DomTraversalResponse {

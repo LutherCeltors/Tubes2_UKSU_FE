@@ -1,17 +1,22 @@
 import "./App.css";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import TreeVisualizer from "./component/tree-visual/tree-visualizer";
 import type { DomTraversalResponse } from "./component/tree-visual/types";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+
+type Algorithm = "bfs" | "dfs" | "lca";
 
 type RequestData = {
   mode: "url" | "html";
   url?: string;
   html?: string;
-  algorithm: "bfs" | "dfs";
-  selector: string;
-  resultMode: "TOP" | "ALL";
+  algorithm: Algorithm;
+  threading: "single" | "multi";
+  selector?: string;
+  resultMode?: "TOP" | "ALL";
   topN?: number;
+  nodeId1?: number;
+  nodeId2?: number;
 };
 
 type OptionCardProps<T extends string> = {
@@ -20,6 +25,11 @@ type OptionCardProps<T extends string> = {
   current: T;
   onSelect: (value: T) => void;
   description: string;
+};
+
+type TreeNodeLike = {
+  id?: unknown;
+  children?: TreeNodeLike[];
 };
 
 function OptionCard<T extends string>({
@@ -70,41 +80,135 @@ function StatPill({
   );
 }
 
+function normalizeNodeId(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return null;
+}
+
+function collectNodeIdsFromTree(data: DomTraversalResponse | null) {
+  if (!data) return [];
+
+  const ids = new Set<number>();
+
+  function traverse(node: TreeNodeLike | null | undefined) {
+    if (!node) return;
+
+    const parsedId = normalizeNodeId(node.id);
+    if (parsedId !== null) ids.add(parsedId);
+
+    (node.children ?? []).forEach(traverse);
+  }
+
+  traverse(data.tree as TreeNodeLike);
+  return Array.from(ids).sort((a, b) => a - b);
+}
+
 function App() {
   const [mode, setMode] = useState<"URL" | "MANUAL">("URL");
   const [url, setUrl] = useState("");
   const [html, setHtml] = useState("");
-  const [algorithm, setAlgorithm] = useState<"bfs" | "dfs">("bfs");
+  const [algorithm, setAlgorithm] = useState<Algorithm>("bfs");
+  const [threading, setThreading] = useState<"single" | "multi">("multi");
   const [selector, setSelector] = useState("");
   const [resultMode, setResultMode] = useState<"TOP" | "ALL">("ALL");
   const [topN, setTopN] = useState(10);
+  const [nodeId1, setNodeId1] = useState("");
+  const [nodeId2, setNodeId2] = useState("");
 
   const [treeData, setTreeData] = useState<DomTraversalResponse | null>(null);
   const [visualizationKey, setVisualizationKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
+  const [submittedAlgorithm, setSubmittedAlgorithm] = useState<Algorithm | null>(null);
 
   const [isLeftMenuOpen, setLeftMenuOpen] = useState(true);
-  const currentData = treeData ?? (!hasAttemptedSearch ? sampleData : null);
+  const currentData = treeData;
+
+  const isLcaAlgorithm = algorithm === "lca";
+  const isLcaNodeSelectionView = submittedAlgorithm === "lca" && currentData !== null;
+  const shouldRunLcaQuery = isLcaAlgorithm && isLcaNodeSelectionView;
+  const availableLcaNodeIds = useMemo(() => collectNodeIdsFromTree(currentData), [currentData]);
+
+  const handleAlgorithmSelect = (nextAlgorithm: Algorithm) => {
+    setAlgorithm(nextAlgorithm);
+    setTreeData(null);
+    setSubmittedAlgorithm(null);
+    setNodeId1("");
+    setNodeId2("");
+    setErrorMessage("");
+  };
+
+  const handleBackToInputMenu = () => {
+    setSubmittedAlgorithm(null);
+    setNodeId1("");
+    setNodeId2("");
+    setErrorMessage("");
+  };
+
+  const validateLcaNodeId = (value: string, label: string, allowedNodeIds: Set<number>) => {
+    if (value.trim() === "") {
+      throw new Error(`${label} is required.`);
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) {
+      throw new Error(`${label} must be an integer.`);
+    }
+
+    if (!allowedNodeIds.has(parsed)) {
+      throw new Error(`${label} must exist in the loaded tree.`);
+    }
+
+    return parsed;
+  };
 
   const handleSubmit = async () => {
+    setErrorMessage("");
+
+    let parsedNodeId1: number | undefined;
+    let parsedNodeId2: number | undefined;
+
+    if (shouldRunLcaQuery) {
+      try {
+        const allowedNodeIds = new Set(availableLcaNodeIds);
+        parsedNodeId1 = validateLcaNodeId(nodeId1, "Node ID 1", allowedNodeIds);
+        parsedNodeId2 = validateLcaNodeId(nodeId2, "Node ID 2", allowedNodeIds);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Invalid node id.");
+        return;
+      }
+    }
+
     const data: RequestData = {
       mode: mode === "URL" ? "url" : "html",
       url: mode === "URL" ? url : undefined,
       html: mode === "MANUAL" ? html : undefined,
       algorithm,
-      selector,
-      resultMode,
-      topN: resultMode === "TOP" ? topN : undefined,
+      threading,
+      ...(isLcaAlgorithm
+        ? shouldRunLcaQuery
+          ? {
+              nodeId1: parsedNodeId1,
+              nodeId2: parsedNodeId2,
+            }
+          : {}
+        : {
+            selector,
+            resultMode,
+            topN: resultMode === "TOP" ? topN : undefined,
+          }),
     };
 
     setIsLoading(true);
-    setErrorMessage("");
-    setHasAttemptedSearch(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/data", {
+      const res = await fetch("/api/data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,15 +222,19 @@ function App() {
 
       const result: DomTraversalResponse = await res.json();
       setTreeData(result);
+      setSubmittedAlgorithm(algorithm);
       setVisualizationKey((prev) => prev + 1);
     } catch (error) {
       console.error(error);
       setErrorMessage("Failed to fetch data.");
       setTreeData(null);
+      setSubmittedAlgorithm(null);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const renderedAlgorithm = submittedAlgorithm ?? algorithm;
 
   return (
     <div className="app-shell">
@@ -146,8 +254,14 @@ function App() {
             <StatPill label="depth" value={`depth ${currentData.maxDepth}`} />
             <StatPill
               label="algorithm"
-              value={algorithm.toUpperCase()}
-              accent={algorithm === "bfs" ? "algo-bfs" : "algo-dfs"}
+              value={renderedAlgorithm.toUpperCase()}
+              accent={
+                renderedAlgorithm === "bfs"
+                  ? "algo-bfs"
+                  : renderedAlgorithm === "dfs"
+                    ? "algo-dfs"
+                    : "default"
+              }
             />
           </div>
         )}
@@ -156,112 +270,197 @@ function App() {
       <div className="app-body">
         <aside className={`app-sidebar ${isLeftMenuOpen ? "open" : "collapsed"}`}>
           <div className="input-panel">
-            <SectionLabel>Input Mode</SectionLabel>
-            <div className="option-group">
-              <OptionCard
-                label="URL"
-                value="URL"
-                current={mode}
-                onSelect={setMode}
-                description="Fetch from web"
-              />
-              <OptionCard
-                label="HTML"
-                value="MANUAL"
-                current={mode}
-                onSelect={setMode}
-                description="Paste markup"
-              />
-            </div>
+            {isLcaNodeSelectionView ? (
+              <>
+                <SectionLabel>Node Id Selector</SectionLabel>
+                <div className="option-group">
+                  <input
+                    type="number"
+                    value={nodeId1}
+                    onChange={(e) => setNodeId1(e.target.value)}
+                    placeholder="First node id"
+                    className="text-input"
+                    list="lca-node-id-options"
+                    disabled={availableLcaNodeIds.length === 0}
+                  />
+                  <div className="field-wrap">
+                    <input
+                      type="number"
+                      value={nodeId2}
+                      onChange={(e) => setNodeId2(e.target.value)}
+                      placeholder="Second node id"
+                      className="text-input"
+                      list="lca-node-id-options"
+                      disabled={availableLcaNodeIds.length === 0}
+                    />
+                  </div>
 
-            <div className="field-wrap">
-              {mode === "URL" ? (
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  className="text-input"
-                />
-              ) : (
-                <textarea
-                  value={html}
-                  onChange={(e) => setHtml(e.target.value)}
-                  placeholder="<html>...</html>"
-                  className="text-input text-input--area"
-                />
-              )}
-            </div>
+                  <datalist id="lca-node-id-options">
+                    {availableLcaNodeIds.map((id) => (
+                      <option key={id} value={id} />
+                    ))}
+                  </datalist>
+                </div>
 
-            <SectionLabel>Algorithm</SectionLabel>
-            <div className="option-group">
-              <OptionCard
-                label="BFS"
-                value="bfs"
-                current={algorithm}
-                onSelect={setAlgorithm}
-                description="Level-by-level"
-              />
-              <OptionCard
-                label="DFS"
-                value="dfs"
-                current={algorithm}
-                onSelect={setAlgorithm}
-                description="Depth-first"
-              />
-            </div>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className={`go-button${isLoading ? " go-button--loading" : ""}`}
+                  disabled={isLoading || availableLcaNodeIds.length === 0}
+                >
+                  {isLoading ? <span className="go-button__spinner" /> : "Go"}
+                </button>
 
-            <SectionLabel>CSS Selector</SectionLabel>
-            <div className="field-wrap">
-              <input
-                type="text"
-                value={selector}
-                onChange={(e) => setSelector(e.target.value)}
-                placeholder="div, .class, #id, p > span"
-                className="text-input"
-              />
-            </div>
+                {errorMessage && <div className="app-error-box">{errorMessage}</div>}
 
-            <SectionLabel>Result Mode</SectionLabel>
-            <div className="option-group">
-              <OptionCard
-                label="All"
-                value="ALL"
-                current={resultMode}
-                onSelect={setResultMode}
-                description="Every match"
-              />
-              <OptionCard
-                label="Top N"
-                value="TOP"
-                current={resultMode}
-                onSelect={setResultMode}
-                description="First N results"
-              />
-            </div>
+                  <button
+                    type="button"
+                    onClick={handleBackToInputMenu}
+                    className="back-button"
+                    disabled={isLoading}
+                  >
+                    Back
+                  </button>
+              </>
+            ) : (
+              <>
+                <SectionLabel>Input Mode</SectionLabel>
+                <div className="option-group">
+                  <OptionCard
+                    label="URL"
+                    value="URL"
+                    current={mode}
+                    onSelect={setMode}
+                    description="Fetch from web"
+                  />
+                  <OptionCard
+                    label="HTML"
+                    value="MANUAL"
+                    current={mode}
+                    onSelect={setMode}
+                    description="Paste markup"
+                  />
+                </div>
 
-            {resultMode === "TOP" && (
-              <div className="field-wrap">
-                <input
-                  type="number"
-                  min={1}
-                  value={topN}
-                  onChange={(e) => setTopN(Math.max(1, Number(e.target.value)))}
-                  className="text-input"
-                />
-              </div>
+                <div className="field-wrap">
+                  {mode === "URL" ? (
+                    <input
+                      type="text"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      className="text-input"
+                    />
+                  ) : (
+                    <textarea
+                      value={html}
+                      onChange={(e) => setHtml(e.target.value)}
+                      placeholder="<html>...</html>"
+                      className="text-input text-input--area"
+                    />
+                  )}
+                </div>
+
+                <SectionLabel>Algorithm</SectionLabel>
+                <div className="option-group">
+                  <OptionCard
+                    label="BFS"
+                    value="bfs"
+                    current={algorithm}
+                    onSelect={handleAlgorithmSelect}
+                    description="Level-by-level"
+                  />
+                  <OptionCard
+                    label="DFS"
+                    value="dfs"
+                    current={algorithm}
+                    onSelect={handleAlgorithmSelect}
+                    description="Depth-first"
+                  />
+                  <OptionCard
+                    label="LCA"
+                    value="lca"
+                    current={algorithm}
+                    onSelect={handleAlgorithmSelect}
+                    description="Lowest-common-ancestor"
+                  />
+                </div>
+
+                {!isLcaAlgorithm && (
+                  <>
+                    <SectionLabel>Threading</SectionLabel>
+                    <div className="option-group">
+                      <OptionCard
+                        label="Single"
+                        value="single"
+                        current={threading}
+                        onSelect={setThreading}
+                        description="Sequential"
+                      />
+                      <OptionCard
+                        label="Multi"
+                        value="multi"
+                        current={threading}
+                        onSelect={setThreading}
+                        description="Parallel"
+                      />
+                    </div>
+
+                    <SectionLabel>CSS Selector</SectionLabel>
+                    <div className="field-wrap">
+                      <input
+                        type="text"
+                        value={selector}
+                        onChange={(e) => setSelector(e.target.value)}
+                        placeholder="div, .class, #id, p > span"
+                        className="text-input"
+                      />
+                    </div>
+
+                    <SectionLabel>Result Mode</SectionLabel>
+                    <div className="option-group">
+                      <OptionCard
+                        label="All"
+                        value="ALL"
+                        current={resultMode}
+                        onSelect={setResultMode}
+                        description="Every match"
+                      />
+                      <OptionCard
+                        label="Top N"
+                        value="TOP"
+                        current={resultMode}
+                        onSelect={setResultMode}
+                        description="First N results"
+                      />
+                    </div>
+
+                    {resultMode === "TOP" && (
+                      <div className="field-wrap">
+                        <input
+                          type="number"
+                          min={1}
+                          value={topN}
+                          onChange={(e) => setTopN(Math.max(1, Number(e.target.value)))}
+                          className="text-input"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className={`go-button${isLoading ? " go-button--loading" : ""}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <span className="go-button__spinner" /> : "Go"}
+                </button>
+
+                {errorMessage && <div className="app-error-box">{errorMessage}</div>}
+              </>
             )}
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className={`go-button${isLoading ? " go-button--loading" : ""}`}
-              disabled={isLoading}
-            >
-              {isLoading ? <span className="go-button__spinner" /> : "Go"}
-            </button>
-
-            {errorMessage && <div className="app-error-box">{errorMessage}</div>}
           </div>
         </aside>
 
@@ -281,62 +480,5 @@ function App() {
     </div>
   );
 }
-
-const sampleData: DomTraversalResponse = {
-  executionTimeMs: 2.5,
-  nodesVisited: 15,
-  maxDepth: 4,
-  tree: {
-    id: 1,
-    tag: "html",
-    attributes: {},
-    children: [
-      {
-        id: 2,
-        tag: "body",
-        attributes: { class: "container" },
-        children: [
-          {
-            id: 5,
-            tag: "div",
-            attributes: { id: "hero" },
-            children: [
-              {
-                id: 8,
-                tag: "h1",
-                attributes: {},
-                children: [],
-              },
-              {
-                id: 9,
-                tag: "p",
-                attributes: {},
-                children: [],
-              },
-            ],
-          },
-          {
-            id: 6,
-            tag: "section",
-            attributes: {},
-            children: [
-              {
-                id: 10,
-                tag: "button",
-                attributes: {},
-                children: [],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  traversalLog: [
-    { nodeId: 1, tag: "html", status: "visited" },
-    { nodeId: 2, tag: "body", status: "visited" },
-    { nodeId: 5, tag: "div", status: "matched" },
-  ],
-};
 
 export default App;

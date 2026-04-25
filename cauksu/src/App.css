@@ -308,6 +308,46 @@ body {
   transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
+.back-button {
+  margin-top: 14px;
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #12a796d8 0%, #0eebac 100%);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow:
+    0 12px 28px rgba(48, 107, 229, 0.24),
+    0 0 30px rgba(82, 120, 255, 0.22);
+  transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.back-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 34px rgba(48, 107, 229, 0.28),
+    0 0 36px rgba(82, 120, 255, 0.26);
+}
+
+.back-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.back-button__spinner {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  border-top-color: #ffffff;
+  animation: app-spin 0.75s linear infinite;
+}
+
 .go-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow:
